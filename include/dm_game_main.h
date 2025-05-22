@@ -39,18 +39,23 @@ typedef enum TeamNumber {
 } TeamNumber;
 static_assert(TEAMNUMBER_MAX == MAX_PLAYERS, "");
 
-#define STRUCT_GAME_STATE_DATA_UNK_178_UNK_LEN 2
+#define max_capsule_size 4
 
-typedef struct struct_game_state_data_now_cap {
-    /* 0x0 */ s8 pos_x[STRUCT_GAME_STATE_DATA_UNK_178_UNK_LEN]; /* Original name: pos_x */
-    /* 0x2 */ s8 pos_y[STRUCT_GAME_STATE_DATA_UNK_178_UNK_LEN]; /* Original name: pos_y */
-    /* 0x4 */ s8 casel_g[STRUCT_GAME_STATE_DATA_UNK_178_UNK_LEN]; /* Original name: casel_g */
-    /* 0x6 */ s8 capsel_p[STRUCT_GAME_STATE_DATA_UNK_178_UNK_LEN]; /* Original name: capsel_p */
-    /* 0x8 */ s8 capsel_flg_0; /* Original name: capsel_flg[4] */
-    /* 0x9 */ s8 capsel_flg_1; /* Original name: capsel_flg[4] */
-    /* 0xA */ s8 capsel_flg_2; /* Original name: capsel_flg[4] */
-    /* 0xB */ s8 capsel_flg_3; // unused
-} struct_game_state_data_now_cap; // size = 0xC
+typedef struct Capsule {
+    /* 0x0 */ s8 pos_x[max_capsule_size]; /* Original name: pos_x */
+    /* 0x2 */ s8 pos_y[max_capsule_size]; /* Original name: pos_y */
+    /* 0x4 */ s8 sprite_index[max_capsule_size]; /* Original name: casel_g */
+    /* 0x6 */ s8 palette_index[max_capsule_size]; /* Original name: capsel_p */
+    /* 0x8 */ s8 display_flag;
+    /* 0x9 */ s8 falling_flg;
+    /* 0xA */ s8 capsel_flg_2;
+    /* 0xB */ s8 piece_count;
+} Capsule; // size = 0xC
+
+typedef struct Point {
+    int x;
+    int y;
+} Point;
 
 typedef struct struct_game_state_data_cap_attack_work {
     /* 0x0 */ u16 unk_0;
@@ -245,8 +250,8 @@ typedef struct struct_game_state_data {
     /* 0x16C */ s32 game_level; /* Original name: game_level */
     /* 0x170 */ s32 total_erase_count; /* Original name: total_erase_count */
     /* 0x174 */ s32 total_chain_count; /* Original name: total_chain_count */
-    /* 0x178 */ struct_game_state_data_now_cap now_cap; /* Original name: now_cap */
-    /* 0x184 */ struct_game_state_data_now_cap next_cap; /* Original name: next_cap */
+    /* 0x178 */ Capsule now_cap; /* Original name: now_cap */
+    /* 0x184 */ Capsule next_cap; /* Original name: next_cap */
     /* 0x190 */ struct_game_state_data_ai ai; /* Original name: ai */
     /* 0x298 */ u8 pn; /* Original name: pn */
     /* 0x299 */ u8 gs; /* Original name: gs */
