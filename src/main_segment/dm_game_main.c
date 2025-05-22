@@ -614,29 +614,30 @@ void dm_make_magazine(void) {
     }
 }
 
-void func_80060F60(struct_game_state_data_unk_178 *arg0, s32 arg1, s32 arg2) {
-    arg0->unk_0[0] = 3;
-    arg0->unk_0[1] = 4;
-    arg0->unk_2[1] = 0;
-    arg0->unk_2[0] = 0;
-    arg0->unk_4[0] = 2;
-    arg0->unk_4[1] = 3;
-    arg0->unk_6[0] = arg1;
-    arg0->unk_6[1] = arg2;
-    arg0->unk_8 = 1;
-    arg0->unk_A = 0;
-    arg0->unk_9 = 0;
+void create_capsule(Capsule *capsule, s32 left_color, s32 right_color) {
+    capsule->x[0] = 3;
+    capsule->x[1] = 4;
+    capsule->y[1] = 0;
+    capsule->y[0] = 0;
+    capsule->sprite_index[0] = 2;
+    capsule->sprite_index[1] = 3;
+    capsule->palette_index[0] = left_color;
+    capsule->palette_index[1] = right_color;
+    capsule->display_flag = 1;
+    capsule->unk_A = 0;
+    capsule->falling_flag = 0;
+    capsule->piece_count = 2;
 }
 
-void func_80060FA0(struct_game_state_data_unk_178 *arg0, s32 arg1, s32 arg2) {
-    func_80060F60(arg0, arg1, arg2);
-    arg0->unk_9 = 1;
+void create_falling_capsule(Capsule *capsule, s32 left_color, s32 right_color) {
+    create_capsule(capsule, left_color, right_color);
+    capsule->falling_flag = 1;
 }
 
 void dm_set_capsel(struct_game_state_data *arg0) {
     arg0->unk_034 = 0;
 
-    func_80060FA0(&arg0->unk_178, CAPSMAGAZINE_GET_A(CapsMagazine[arg0->unk_032]),
+    create_falling_capsule(&arg0->current_capsule, CAPSMAGAZINE_GET_A(CapsMagazine[arg0->unk_032]),
                   CAPSMAGAZINE_GET_B(CapsMagazine[arg0->unk_032]));
     arg0->unk_033 = arg0->unk_032;
 
@@ -645,7 +646,7 @@ void dm_set_capsel(struct_game_state_data *arg0) {
         arg0->unk_032 = 1;
     }
 
-    func_80060F60(&arg0->unk_184, CAPSMAGAZINE_GET_A(CapsMagazine[arg0->unk_032]),
+    create_capsule(&arg0->preview_capsule, CAPSMAGAZINE_GET_A(CapsMagazine[arg0->unk_032]),
                   CAPSMAGAZINE_GET_B(CapsMagazine[arg0->unk_032]));
 }
 
@@ -2786,7 +2787,7 @@ s32 dm_game_main_cnt_1P(struct_game_state_data *gameStateData, GameMapCell *mapC
             gameStateData->unk_02F++;
 
             if (gameStateData->unk_02F == FlyingCnt[gameStateData->unk_02C]) {
-                func_80060FA0(&gameStateData->unk_178, (CapsMagazine[gameStateData->unk_033] >> 4) % 3,
+                create_falling_capsule(&gameStateData->current_capsule, (CapsMagazine[gameStateData->unk_033] >> 4) % 3,
                               CapsMagazine[gameStateData->unk_033] % 3);
                 gameStateData->unk_00C = GAMESTATEDATA_UNK_00C_4;
                 gameStateData->unk_02F = 0x1E;
