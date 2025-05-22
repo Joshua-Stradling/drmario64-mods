@@ -436,67 +436,67 @@ const s32 rotate_mtx_400[] = {
 /**
  * Original name: throw_rotate_capsel
  */
-void throw_rotate_capsel(struct_game_state_data_unk_178 *arg0) {
+void throw_rotate_capsel(Capsule *arg0) {
     s32 i;
     s32 var_t0;
     s32 temp_a2;
 
-    if (arg0->unk_0[0] == arg0->unk_0[1]) {
-        arg0->unk_0[1]++;
-        arg0->unk_2[1]++;
+    if (arg0->x[0] == arg0->x[1]) {
+        arg0->x[1]++;
+        arg0->y[1]++;
 
-        temp_a2 = arg0->unk_6[0];
-        arg0->unk_6[0] = arg0->unk_6[1];
-        arg0->unk_6[1] = temp_a2;
+        temp_a2 = arg0->palette_index[0];
+        arg0->palette_index[0] = arg0->palette_index[1];
+        arg0->palette_index[1] = temp_a2;
 
         var_t0 = 1;
     } else {
-        arg0->unk_0[1]--;
-        arg0->unk_2[1]--;
+        arg0->x[1]--;
+        arg0->y[1]--;
         var_t0 = -1;
     }
 
-    for (i = 0; i < ARRAY_COUNT(arg0->unk_4); i++) {
-        temp_a2 = rotate_table_399[arg0->unk_4[i]];
+    for (i = 0; i < ARRAY_COUNT(arg0->sprite_index); i++) {
+        temp_a2 = rotate_table_399[arg0->sprite_index[i]];
         temp_a2 += var_t0;
 
-        arg0->unk_4[i] = rotate_mtx_400[temp_a2];
+        arg0->sprite_index[i] = rotate_mtx_400[temp_a2];
     }
 }
 
 void translate_capsel(GameMapCell *mapCells, struct_game_state_data *arg1, s32 arg2, s32 arg3) {
     s32 var_s1 = 0;
-    struct_game_state_data_unk_178 *temp_s5 = &arg1->unk_178;
+    Capsule *temp_s5 = &arg1->current_capsule;
 
-    if ((temp_s5->unk_2[0] <= 0) || (temp_s5->unk_8 == 0)) {
+    if ((temp_s5->y[0] <= 0) || (temp_s5->display_flag == 0)) {
         return;
     }
 
     if (arg2 == 1) {
-        if (temp_s5->unk_0[0] == temp_s5->unk_0[1]) {
-            if ((temp_s5->unk_0[1] < 7) && (get_map_info(mapCells, temp_s5->unk_0[1] + 1, temp_s5->unk_2[0]) != arg2)) {
-                if (temp_s5->unk_2[1] == 0) {
+        if (temp_s5->x[0] == temp_s5->x[1]) {
+            if ((temp_s5->x[1] < 7) && (get_map_info(mapCells, temp_s5->x[1] + 1, temp_s5->y[0]) != arg2)) {
+                if (temp_s5->y[1] == 0) {
                     var_s1 = 1;
-                } else if (get_map_info(mapCells, temp_s5->unk_0[0] + 1, temp_s5->unk_2[1]) != arg2) {
+                } else if (get_map_info(mapCells, temp_s5->x[0] + 1, temp_s5->y[1]) != arg2) {
                     var_s1 = 1;
                 }
             }
-        } else if (temp_s5->unk_0[1] < 7) {
-            if (get_map_info(mapCells, temp_s5->unk_0[1] + 1, temp_s5->unk_2[0]) != arg2) {
+        } else if (temp_s5->x[1] < 7) {
+            if (get_map_info(mapCells, temp_s5->x[1] + 1, temp_s5->y[0]) != arg2) {
                 var_s1 = 1;
             }
         }
     } else if (arg2 == -1) {
-        if (temp_s5->unk_0[0] == temp_s5->unk_0[1]) {
-            if ((temp_s5->unk_0[0] > 0) && (get_map_info(mapCells, temp_s5->unk_0[0] - 1, temp_s5->unk_2[0]) != 1)) {
-                if (temp_s5->unk_2[1] == 0) {
+        if (temp_s5->x[0] == temp_s5->x[1]) {
+            if ((temp_s5->x[0] > 0) && (get_map_info(mapCells, temp_s5->x[0] - 1, temp_s5->y[0]) != 1)) {
+                if (temp_s5->y[1] == 0) {
                     var_s1 = -1;
-                } else if (get_map_info(mapCells, temp_s5->unk_0[0] - 1, temp_s5->unk_2[1]) != 1) {
+                } else if (get_map_info(mapCells, temp_s5->x[0] - 1, temp_s5->y[1]) != 1) {
                     var_s1 = -1;
                 }
             }
-        } else if (temp_s5->unk_0[0] > 0) {
-            if (get_map_info(mapCells, temp_s5->unk_0[0] - 1, temp_s5->unk_2[0]) != 1) {
+        } else if (temp_s5->x[0] > 0) {
+            if (get_map_info(mapCells, temp_s5->x[0] - 1, temp_s5->y[0]) != 1) {
                 var_s1 = -1;
             }
         }
@@ -505,8 +505,8 @@ void translate_capsel(GameMapCell *mapCells, struct_game_state_data *arg1, s32 a
     if (var_s1 != 0) {
         dm_snd_play_in_game(SND_INDEX_65);
         arg1->unk_034 = 0;
-        temp_s5->unk_0[0] += var_s1;
-        temp_s5->unk_0[1] += var_s1;
+        temp_s5->x[0] += var_s1;
+        temp_s5->x[1] += var_s1;
     } else {
         if (arg1->unk_034 == 0) {
             arg1->unk_034 = 1;
@@ -521,53 +521,53 @@ void translate_capsel(GameMapCell *mapCells, struct_game_state_data *arg1, s32 a
     }
 }
 
-void rotate_capsel(GameMapCell *mapCells, struct_game_state_data_unk_178 *arg1, s32 arg2) {
+void rotate_capsel(GameMapCell *mapCells, Capsule *arg1, s32 arg2) {
     s32 var_s1 = 0;
     s32 temp;
 
-    if ((arg1->unk_2[0] <= 0) || (arg1->unk_8 == 0)) {
+    if ((arg1->y[0] <= 0) || (arg1->display_flag == 0)) {
         return;
     }
 
-    if (arg1->unk_0[0] == arg1->unk_0[1]) {
-        if ((arg1->unk_0[0] == 7) || (get_map_info(mapCells, arg1->unk_0[0] + 1, arg1->unk_2[0]) == 1)) {
-            if ((arg1->unk_0[0] != 0) && (get_map_info(mapCells, arg1->unk_0[0] - 1, arg1->unk_2[0]) != 1)) {
-                arg1->unk_0[0]--;
+    if (arg1->x[0] == arg1->x[1]) {
+        if ((arg1->x[0] == 7) || (get_map_info(mapCells, arg1->x[0] + 1, arg1->y[0]) == 1)) {
+            if ((arg1->x[0] != 0) && (get_map_info(mapCells, arg1->x[0] - 1, arg1->y[0]) != 1)) {
+                arg1->x[0]--;
                 var_s1 = 1;
             }
         } else {
-            arg1->unk_0[1]++;
+            arg1->x[1]++;
             var_s1 = 1;
         }
 
         if (var_s1 != 0) {
-            arg1->unk_2[1]++;
+            arg1->y[1]++;
             if (arg2 == -1) {
-                temp = arg1->unk_6[0];
-                arg1->unk_6[0] = arg1->unk_6[1];
-                arg1->unk_6[1] = temp;
+                temp = arg1->palette_index[0];
+                arg1->palette_index[0] = arg1->palette_index[1];
+                arg1->palette_index[1] = temp;
             }
         }
     } else {
-        if (arg1->unk_2[0] == 1) {
-            arg1->unk_0[1]--;
+        if (arg1->y[0] == 1) {
+            arg1->x[1]--;
             var_s1 = -1;
-        } else if (get_map_info(mapCells, arg1->unk_0[0], arg1->unk_2[0] - 1) == 1) {
-            if (get_map_info(mapCells, arg1->unk_0[0] + 1, arg1->unk_2[0] - 1) != 1) {
-                arg1->unk_0[0]++;
+        } else if (get_map_info(mapCells, arg1->x[0], arg1->y[0] - 1) == 1) {
+            if (get_map_info(mapCells, arg1->x[0] + 1, arg1->y[0] - 1) != 1) {
+                arg1->x[0]++;
                 var_s1 = -1;
             }
         } else {
-            arg1->unk_0[1]--;
+            arg1->x[1]--;
             var_s1 = -1;
         }
 
         if (var_s1 != 0) {
-            arg1->unk_2[1]--;
+            arg1->y[1]--;
             if (arg2 == 1) {
-                temp = arg1->unk_6[0];
-                arg1->unk_6[0] = arg1->unk_6[1];
-                arg1->unk_6[1] = temp;
+                temp = arg1->palette_index[0];
+                arg1->palette_index[0] = arg1->palette_index[1];
+                arg1->palette_index[1] = temp;
             }
         }
     }
@@ -577,10 +577,10 @@ void rotate_capsel(GameMapCell *mapCells, struct_game_state_data_unk_178 *arg1, 
 
         dm_snd_play_in_game(SND_INDEX_67);
 
-        for (i = 0; i < ARRAY_COUNTU(arg1->unk_4); i++) {
-            temp = rotate_table_474[arg1->unk_4[i]];
+        for (i = 0; i < ARRAY_COUNTU(arg1->sprite_index); i++) {
+            temp = rotate_table_474[arg1->sprite_index[i]];
             temp += var_s1;
-            arg1->unk_4[i] = rotate_mtx_475[temp];
+            arg1->sprite_index[i] = rotate_mtx_475[temp];
         }
     }
 }
@@ -624,7 +624,7 @@ void create_capsule(Capsule *capsule, s32 left_color, s32 right_color) {
     capsule->palette_index[0] = left_color;
     capsule->palette_index[1] = right_color;
     capsule->display_flag = 1;
-    capsule->unk_A = 0;
+    capsule->unk_12 = 0;
     capsule->falling_flag = 0;
     capsule->piece_count = 2;
 }
@@ -1219,11 +1219,11 @@ void dm_calc_erase_score_pos(struct_game_state_data *arg0, GameMapCell *mapCells
 }
 
 bool dm_calc_capsel_pos(struct_game_state_data *gameStateDataRef, s32 arg1[2], s32 arg2[2]) {
-    struct_game_state_data_unk_178 *temp_s1 = &gameStateDataRef->unk_178;
+    Capsule *temp_s1 = &gameStateDataRef->current_capsule;
     s32 var_t0;
     s32 what = 0x24;
 
-    if (temp_s1->unk_8 == 0) {
+    if (temp_s1->display_flag == 0) {
         return false;
     }
 
@@ -1250,13 +1250,13 @@ bool dm_calc_capsel_pos(struct_game_state_data *gameStateDataRef, s32 arg1[2], s
             var_s2 = 5;
         }
 
-        if (gameStateDataRef->unk_178.unk_0[0] == gameStateDataRef->unk_178.unk_0[1]) {
+        if (gameStateDataRef->current_capsule.x[0] == gameStateDataRef->current_capsule.x[1]) {
             if ((var_a0 == 4) || (var_a0 == 6)) {
-                throw_rotate_capsel(&gameStateDataRef->unk_178);
+                throw_rotate_capsel(&gameStateDataRef->current_capsule);
             }
         } else {
             if ((var_a0 == 5) || (var_a0 == 7)) {
-                throw_rotate_capsel(&gameStateDataRef->unk_178);
+                throw_rotate_capsel(&gameStateDataRef->current_capsule);
             }
         }
 
@@ -1270,8 +1270,8 @@ bool dm_calc_capsel_pos(struct_game_state_data *gameStateDataRef, s32 arg1[2], s
             var_fa0 = what - (2.0f * var_fa0);
         }
 
-        temp_ft3 = gameStateDataRef->unk_006 + gameStateDataRef->unk_00A * temp_s1->unk_0[0];
-        temp_ft2 = gameStateDataRef->unk_008 + gameStateDataRef->unk_00A * (temp_s1->unk_2[0] - 1);
+        temp_ft3 = gameStateDataRef->unk_006 + gameStateDataRef->unk_00A * temp_s1->x[0];
+        temp_ft2 = gameStateDataRef->unk_008 + gameStateDataRef->unk_00A * (temp_s1->y[0] - 1);
 
         a = temp_ft3 + ((218.0f - temp_ft3) / (FlyingCnt[gameStateDataRef->unk_02C] - 1)) *
                            (FlyingCnt[gameStateDataRef->unk_02C] - gameStateDataRef->unk_02F);
@@ -1279,19 +1279,19 @@ bool dm_calc_capsel_pos(struct_game_state_data *gameStateDataRef, s32 arg1[2], s
                            (FlyingCnt[gameStateDataRef->unk_02C] - gameStateDataRef->unk_02F);
 
         for (var_t0 = 0; var_t0 < 2; var_t0++) {
-            arg1[var_t0] = (u32)a + var_s2 + gameStateDataRef->unk_00A * (temp_s1->unk_0[var_t0] - 3);
+            arg1[var_t0] = (u32)a + var_s2 + gameStateDataRef->unk_00A * (temp_s1->x[var_t0] - 3);
             arg2[var_t0] =
-                (u32)b + var_s2 - (u16)(u32)var_fa0 + 1 + gameStateDataRef->unk_00A * (temp_s1->unk_2[var_t0] + 1);
+                (u32)b + var_s2 - (u16)(u32)var_fa0 + 1 + gameStateDataRef->unk_00A * (temp_s1->y[var_t0] + 1);
         }
-    } else if (temp_s1->unk_2[0] <= 0) {
+    } else if (temp_s1->y[0] <= 0) {
         for (var_t0 = 0; var_t0 < 2; var_t0++) {
-            arg1[var_t0] = gameStateDataRef->unk_006 + gameStateDataRef->unk_00A * temp_s1->unk_0[var_t0];
-            arg2[var_t0] = gameStateDataRef->unk_008 + gameStateDataRef->unk_00A * temp_s1->unk_2[var_t0] - 0xA;
+            arg1[var_t0] = gameStateDataRef->unk_006 + gameStateDataRef->unk_00A * temp_s1->x[var_t0];
+            arg2[var_t0] = gameStateDataRef->unk_008 + gameStateDataRef->unk_00A * temp_s1->y[var_t0] - 0xA;
         }
     } else {
         for (var_t0 = 0; var_t0 < 2; var_t0++) {
-            arg1[var_t0] = gameStateDataRef->unk_006 + gameStateDataRef->unk_00A * temp_s1->unk_0[var_t0];
-            arg2[var_t0] = gameStateDataRef->unk_008 + gameStateDataRef->unk_00A * temp_s1->unk_2[var_t0] + 1;
+            arg1[var_t0] = gameStateDataRef->unk_006 + gameStateDataRef->unk_00A * temp_s1->x[var_t0];
+            arg2[var_t0] = gameStateDataRef->unk_008 + gameStateDataRef->unk_00A * temp_s1->y[var_t0] + 1;
         }
     }
 
@@ -1299,7 +1299,7 @@ bool dm_calc_capsel_pos(struct_game_state_data *gameStateDataRef, s32 arg1[2], s
 }
 
 void dm_draw_capsel_by_gfx(struct_game_state_data *gameStateData, s32 *arg1, s32 *arg2) {
-    struct_game_state_data_unk_178 *temp_s1 = &gameStateData->unk_178;
+    Capsule *temp_s1 = &gameStateData->current_capsule;
     s32 var_s3;
     TiTexData *temp_v0;
     s32 i;
@@ -1317,9 +1317,9 @@ void dm_draw_capsel_by_gfx(struct_game_state_data *gameStateData, s32 *arg1, s32
     load_TexBlock_4b(temp_v0->texs[1], temp_v0->info[0], temp_v0->info[1]);
 
     for (i = 0; i < 2; i++) {
-        load_TexPal(dm_game_get_capsel_pal(var_s3, temp_s1->unk_6[i])->texs[0]);
+        load_TexPal(dm_game_get_capsel_pal(var_s3, temp_s1->palette_index[i])->texs[0]);
         draw_Tex(arg1[i], arg2[i], gameStateData->unk_00A, gameStateData->unk_00A, 0,
-                 temp_s1->unk_4[i] * gameStateData->unk_00A);
+                 temp_s1->sprite_index[i] * gameStateData->unk_00A);
     }
 }
 
@@ -1331,7 +1331,7 @@ void dm_draw_capsel_by_gfx(struct_game_state_data *gameStateData, s32 *arg1, s32
  * Does this by drawing directly to the framebuffer instead of using the gfx microcode.
  */
 void dm_draw_capsel_by_cpu_tentative(struct_game_state_data *gameStateDataRef, s32 arg1[2], s32 arg2[2]) {
-    struct_game_state_data_unk_178 *temp_s6 = &gameStateDataRef->unk_178;
+    Capsule *temp_s6 = &gameStateDataRef->current_capsule;
     TiTexData *tex_data;
     s32 var_s1;
     s32 var_s5;
@@ -1358,13 +1358,13 @@ void dm_draw_capsel_by_cpu_tentative(struct_game_state_data *gameStateDataRef, s
             continue;
         }
 
-        tex_data = dm_game_get_capsel_pal(var_s5, temp_s6->unk_6[var_s1]);
+        tex_data = dm_game_get_capsel_pal(var_s5, temp_s6->palette_index[var_s1]);
         tlut = tex_data->texs[0];
 
         tex_data = dm_game_get_capsel_tex(var_s5);
 
         ci4_texture = tex_data->texs[1];
-        ci4_texture += (temp_s6->unk_4[var_s1] * gameStateDataRef->unk_00A * tex_data->info[0]) >> 1;
+        ci4_texture += (temp_s6->sprite_index[var_s1] * gameStateDataRef->unk_00A * tex_data->info[0]) >> 1;
 
         temp_a3_2 = (tex_data->info[0] - gameStateDataRef->unk_00A) >> 1;
 
@@ -1908,17 +1908,17 @@ const s32 black_color_1384[] = { 0, 3 };
  */
 void dm_capsel_down(struct_game_state_data *gameStateData, GameMapCell *mapCells) {
     struct_watchGame *watchGameP = watchGame;
-    struct_game_state_data_unk_178 *temp_s2 = &gameStateData->unk_178;
+    Capsule *temp_s2 = &gameStateData->current_capsule;
     s32 var_s0_2;
     s32 var_s1_2;
 
-    if (temp_s2->unk_2[0] > 0) {
+    if (temp_s2->y[0] > 0) {
         var_s0_2 = FallSpeed[gameStateData->unk_02D];
-        if ((temp_s2->unk_2[0] < 4) && (temp_s2->unk_2[0] > 0)) {
-            var_s0_2 += BonusWait[temp_s2->unk_2[0] - 1][gameStateData->unk_02C];
+        if ((temp_s2->y[0] < 4) && (temp_s2->y[0] > 0)) {
+            var_s0_2 += BonusWait[temp_s2->y[0] - 1][gameStateData->unk_02C];
         }
         var_s1_2 = 0;
-        if (get_map_info(mapCells, gameStateData->unk_178.unk_0[0], temp_s2->unk_2[0] + 1) != 0) {
+        if (get_map_info(mapCells, gameStateData->current_capsule.x[0], temp_s2->y[0] + 1) != 0) {
             var_s1_2 = watchGameP->unk_898;
         }
         gameStateData->unk_031 = var_s0_2 + var_s1_2;
@@ -1932,61 +1932,61 @@ void dm_capsel_down(struct_game_state_data *gameStateData, GameMapCell *mapCells
     }
 
     gameStateData->unk_02F = 0;
-    if (temp_s2->unk_8 == 0) {
+    if (temp_s2->display_flag == 0) {
         return;
     }
 
-    if (temp_s2->unk_2[0] > 0) {
-        if (temp_s2->unk_0[0] == temp_s2->unk_0[1]) {
-            if (get_map_info(mapCells, temp_s2->unk_0[0], temp_s2->unk_2[0] + 1) != 0) {
-                temp_s2->unk_9 = 0;
+    if (temp_s2->y[0] > 0) {
+        if (temp_s2->x[0] == temp_s2->x[1]) {
+            if (get_map_info(mapCells, temp_s2->x[0], temp_s2->y[0] + 1) != 0) {
+                temp_s2->falling_flag = 0;
             }
         } else {
-            for (var_s1_2 = 0; var_s1_2 < ARRAY_COUNTU(temp_s2->unk_0); var_s1_2++) {
-                if (get_map_info(mapCells, temp_s2->unk_0[var_s1_2], temp_s2->unk_2[var_s1_2] + 1) != 0) {
-                    temp_s2->unk_9 = 0;
+            for (var_s1_2 = 0; var_s1_2 < ARRAY_COUNTU(temp_s2->x); var_s1_2++) {
+                if (get_map_info(mapCells, temp_s2->x[var_s1_2], temp_s2->y[var_s1_2] + 1) != 0) {
+                    temp_s2->falling_flag = 0;
                     break;
                 }
             }
         }
     }
 
-    for (var_s0_2 = 0; var_s0_2 < ARRAY_COUNTU(temp_s2->unk_2); var_s0_2++) {
-        if (temp_s2->unk_2[var_s0_2] == 0x10) {
-            temp_s2->unk_9 = 0;
+    for (var_s0_2 = 0; var_s0_2 < ARRAY_COUNTU(temp_s2->y); var_s0_2++) {
+        if (temp_s2->y[var_s0_2] == 0x10) {
+            temp_s2->falling_flag = 0;
             break;
         }
     }
 
-    if (temp_s2->unk_9 != 0) {
-        for (var_s0_2 = 0; var_s0_2 < ARRAY_COUNTU(temp_s2->unk_2); var_s0_2++) {
-            if (temp_s2->unk_2[var_s0_2] < 0x10) {
-                temp_s2->unk_2[var_s0_2]++;
+    if (temp_s2->falling_flag != 0) {
+        for (var_s0_2 = 0; var_s0_2 < ARRAY_COUNTU(temp_s2->y); var_s0_2++) {
+            if (temp_s2->y[var_s0_2] < 0x10) {
+                temp_s2->y[var_s0_2]++;
             }
         }
 
-        for (var_s0_2 = 0; var_s0_2 < ARRAY_COUNTU(temp_s2->unk_0); var_s0_2++) {
-            if (get_map_info(mapCells, temp_s2->unk_0[var_s0_2], temp_s2->unk_2[var_s0_2]) != 0) {
+        for (var_s0_2 = 0; var_s0_2 < ARRAY_COUNTU(temp_s2->x); var_s0_2++) {
+            if (get_map_info(mapCells, temp_s2->x[var_s0_2], temp_s2->y[var_s0_2]) != 0) {
                 gameStateData->unk_020 = 4;
-                gameStateData->unk_184.unk_8 = 0;
-                temp_s2->unk_9 = 0;
+                gameStateData->preview_capsule.display_flag = 0;
+                temp_s2->falling_flag = 0;
                 break;
             }
         }
 
-        if (temp_s2->unk_9 != 0) {
+        if (temp_s2->falling_flag != 0) {
             return;
         }
     }
 
     dm_snd_play_in_game(SND_INDEX_66);
     gameStateData->unk_00C = GAMESTATEDATA_UNK_00C_5;
-    temp_s2->unk_8 = 0;
+    temp_s2->display_flag = 0;
 
-    for (var_s0_2 = 0; var_s0_2 < ARRAY_COUNTU(temp_s2->unk_2); var_s0_2++) {
-        if (temp_s2->unk_2[var_s0_2] != 0) {
-            set_map(mapCells, temp_s2->unk_0[var_s0_2], temp_s2->unk_2[var_s0_2], temp_s2->unk_4[var_s0_2],
-                    temp_s2->unk_6[var_s0_2] + black_color_1384[gameStateData->unk_049]);
+    for (var_s0_2 = 0; var_s0_2 < ARRAY_COUNTU(temp_s2->y); var_s0_2++) {
+        if (temp_s2->y[var_s0_2] != 0) {
+            set_map(mapCells, temp_s2->x[var_s0_2], temp_s2->y[var_s0_2], temp_s2->sprite_index[var_s0_2],
+                    temp_s2->palette_index[var_s0_2] + black_color_1384[gameStateData->unk_049]);
         }
     }
 }
@@ -4999,24 +4999,24 @@ void dm_map_draw(GameMapCell *mapCells, u8 arg1, s16 arg2, s16 arg3, s8 arg4) {
     }
 }
 
-void func_80069ACC(GameMapCell *mapCells, struct_game_state_data_unk_178 *arg1, s32 arg2[2]) {
+void func_80069ACC(GameMapCell *mapCells, Capsule *arg1, s32 arg2[2]) {
     s32 var_s3 = 0x10;
     s32 i;
     int row;
 
     for (i = 0; i < 2; i++) {
-        row = MAX(1, arg1->unk_2[i]);
+        row = MAX(1, arg1->y[i]);
 
         for (; row < GAME_MAP_ROWS; row++) {
-            if (get_map_info(mapCells, arg1->unk_0[i], row) != 0) {
+            if (get_map_info(mapCells, arg1->x[i], row) != 0) {
                 var_s3 = MIN(var_s3, row - 1);
                 break;
             }
         }
     }
 
-    arg2[0] = var_s3 - (arg1->unk_2[0] < arg1->unk_2[1] ? 1 : 0);
-    arg2[1] = var_s3 - (arg1->unk_2[0] > arg1->unk_2[1] ? 1 : 0);
+    arg2[0] = var_s3 - (arg1->y[0] < arg1->y[1] ? 1 : 0);
+    arg2[1] = var_s3 - (arg1->y[0] > arg1->y[1] ? 1 : 0);
 }
 
 const char _tbl_4345[] = { 9, 0, 1, 2, 3, 4, 5, 6, 7, 8 };
@@ -5673,17 +5673,17 @@ void dm_game_graphic_common(struct_game_state_data *gameStateData, s32 arg1, Gam
     gfxSetScissor(&gGfxHead, GFXSETSCISSOR_INTERLACE_NO, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     if ((gameStateData->unk_04C != 1) && ((gameStateData->unk_04C == 1) || (arg1 != 0) || (aiDebugP1 < 0))) {
-        struct_game_state_data_unk_178 *temp;
+        Capsule *temp;
 
         if ((visible_fall_point[arg1] == 0) || (gameStateData->unk_00C != GAMESTATEDATA_UNK_00C_4)) {
             return;
         }
 
-        if ((gameStateData->unk_178.unk_2[0] <= 0) || (gameStateData->unk_178.unk_8 == 0)) {
+        if ((gameStateData->current_capsule.y[0] <= 0) || (gameStateData->current_capsule.display_flag == 0)) {
             return;
         }
 
-        temp = &gameStateData->unk_178;
+        temp = &gameStateData->current_capsule;
 
         func_80069ACC(mapCells, temp, sp28);
 
@@ -5696,14 +5696,14 @@ void dm_game_graphic_common(struct_game_state_data *gameStateData, s32 arg1, Gam
             s32 temp_a1_2;
             s32 temp_a2;
 
-            temp_v0 = dm_game_get_capsel_pal(temp_s6, temp->unk_6[i]);
+            temp_v0 = dm_game_get_capsel_pal(temp_s6, temp->palette_index[i]);
             load_TexPal(temp_v0->texs[0]);
             temp_t0_2 = gameStateData->unk_00A;
-            temp_a1_2 = (temp->unk_0[i] * temp_t0_2) + gameStateData->unk_006;
+            temp_a1_2 = (temp->x[i] * temp_t0_2) + gameStateData->unk_006;
             temp_a2 = (sp28[i] * temp_t0_2) + gameStateData->unk_008;
 
             gSPTextureRectangle(gGfxHead++, (temp_a1_2 * 4), (temp_a2 * 4), ((temp_a1_2 + temp_t0_2) * 4),
-                                ((temp_a2 + temp_t0_2) * 4), G_TX_RENDERTILE, 0x0000, (temp->unk_4[i] * temp_t0_2 << 5),
+                                ((temp_a2 + temp_t0_2) * 4), G_TX_RENDERTILE, 0x0000, (temp->sprite_index[i] * temp_t0_2 << 5),
                                 0x0400, 0x0400);
         }
 
@@ -5730,23 +5730,23 @@ void dm_game_graphic_p(struct_game_state_data *gameStateData, s32 arg1, GameMapC
     gSPDisplayList(gGfxHead++, normal_texture_init_dl);
 
     if (dm_calc_capsel_pos(gameStateData, sp20, sp28)) {
-        if ((watchGameP->unk_420 != 0) || (gameStateData->unk_178.unk_2[0] <= 0) ||
+        if ((watchGameP->unk_420 != 0) || (gameStateData->current_capsule.y[0] <= 0) ||
             ((gameStateData->unk_014 != GAMESTATEDATA_UNK_014_D) &&
              (gameStateData->unk_014 != GAMESTATEDATA_UNK_014_1))) {
             dm_draw_capsel_by_gfx(gameStateData, sp20, sp28);
         }
     }
 
-    if ((gameStateData->unk_184.unk_8 == 0) || (gameStateData->unk_178.unk_2[0] <= 0)) {
+    if ((gameStateData->preview_capsule.display_flag == 0) || (gameStateData->current_capsule.y[0] <= 0)) {
         return;
     }
 
-    for (i = 0; i < STRUCT_GAME_STATE_DATA_UNK_178_UNK_LEN; i++) {
-        load_TexPal(dm_game_get_capsel_pal(temp_s6, gameStateData->unk_184.unk_6[i])->texs[0]);
-        draw_Tex(gameStateData->unk_184.unk_0[i] * gameStateData->unk_00A + gameStateData->unk_006,
-                 (gameStateData->unk_184.unk_2[i] * gameStateData->unk_00A + gameStateData->unk_008) - 0xA,
+    for (i = 0; i < gameStateData->preview_capsule.piece_count; i++) {
+        load_TexPal(dm_game_get_capsel_pal(temp_s6, gameStateData->preview_capsule.palette_index[i])->texs[0]);
+        draw_Tex(gameStateData->preview_capsule.x[i] * gameStateData->unk_00A + gameStateData->unk_006,
+                 (gameStateData->preview_capsule.y[i] * gameStateData->unk_00A + gameStateData->unk_008) - 0xA,
                  gameStateData->unk_00A, gameStateData->unk_00A, 0,
-                 gameStateData->unk_184.unk_4[i] * gameStateData->unk_00A);
+                 gameStateData->preview_capsule.sprite_index[i] * gameStateData->unk_00A);
     }
 }
 
@@ -5784,16 +5784,16 @@ void dm_game_graphic_1p(struct_game_state_data *gameStateDataRef, s32 arg1, Game
         }
     }
 
-    if ((gameStateDataRef->unk_184.unk_8 == 0) || (gameStateDataRef->unk_178.unk_2[0] <= 0) ||
+    if ((gameStateDataRef->preview_capsule.display_flag == 0) || (gameStateDataRef->current_capsule.y[0] <= 0) ||
         (gameStateDataRef->unk_020 != 1)) {
         return;
     }
 
     for (i = 0; i < 2; i++) {
-        TiTexData *temp = dm_game_get_capsel_pal(0, gameStateDataRef->unk_184.unk_6[i]);
+        TiTexData *temp = dm_game_get_capsel_pal(0, gameStateDataRef->preview_capsule.palette_index[i]);
 
         load_TexPal(temp->texs[0]);
-        draw_Tex(0xDA + i * 0xA, 0x34, 0xA, 0xA, 0, gameStateDataRef->unk_184.unk_4[i] * 0xA);
+        draw_Tex(0xDA + i * 0xA, 0x34, 0xA, 0xA, 0, gameStateDataRef->preview_capsule.sprite_index[i] * 0xA);
     }
 }
 
@@ -6189,7 +6189,7 @@ void key_control_main(struct_game_state_data *gameStateDataRef, GameMapCell *map
         }
     } else if (gameStateDataRef->unk_00C == GAMESTATEDATA_UNK_00C_4) {
         if (gameStateDataRef->unk_020 == 1) {
-            struct_game_state_data_unk_178 *temp_s0_2;
+            Capsule *temp_s0_2;
 
             if ((gameStateDataRef->unk_04C == 1) ||
                 ((gameStateDataRef->unk_04C != 1) && (arg2 == 0) && (aiDebugP1 >= 0))) {
@@ -6201,7 +6201,7 @@ void key_control_main(struct_game_state_data *gameStateDataRef, GameMapCell *map
                 }
             }
 
-            temp_s0_2 = &gameStateDataRef->unk_178;
+            temp_s0_2 = &gameStateDataRef->current_capsule;
             if (joygam[arg2] & B_BUTTON) {
                 rotate_capsel(mapCells, temp_s0_2, -1);
             } else if (joygam[arg2] & A_BUTTON) {
@@ -6215,7 +6215,7 @@ void key_control_main(struct_game_state_data *gameStateDataRef, GameMapCell *map
             }
 
             gameStateDataRef->unk_030 = 1;
-            if ((joygam[arg2] & D_JPAD) && (temp_s0_2->unk_2[0] > 0)) {
+            if ((joygam[arg2] & D_JPAD) && (temp_s0_2->y[0] > 0)) {
                 s32 val = FallSpeed[gameStateDataRef->unk_02D];
 
                 val = (val >> 1) + (val & 1);
@@ -6240,15 +6240,15 @@ void key_control_main(struct_game_state_data *gameStateDataRef, GameMapCell *map
         temp_s5->unk_37C[arg2] = 2;
     } else {
         if (temp_s5->unk_37C[arg2] != 0) {
-            s32 temp_s3 = gameStateDataRef->unk_178.unk_8;
+            s32 temp_s3 = gameStateDataRef->current_capsule.display_flag;
 
-            gameStateDataRef->unk_178.unk_8 = 1;
+            gameStateDataRef->current_capsule.display_flag = 1;
             if (temp_s5->unk_420 == 0) {
                 if (dm_calc_capsel_pos(gameStateDataRef, sp18, sp20)) {
                     dm_draw_capsel_by_cpu_tentative(gameStateDataRef, sp18, sp20);
                 }
             }
-            gameStateDataRef->unk_178.unk_8 = temp_s3;
+            gameStateDataRef->current_capsule.display_flag = temp_s3;
             temp_s5->unk_37C[arg2] -= 1;
         }
 
