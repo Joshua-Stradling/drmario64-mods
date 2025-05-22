@@ -615,8 +615,8 @@ void aifMakeWork(struct_game_state_data *uupw) {
     uupw->cap.my = uupw->now_cap.pos_y[0];
     uupw->cap.cn = uupw->cap_speed_count;
     uupw->cap.sp = uupw->cap_speed;
-    uupw->cap.ca = uupw->now_cap.capsel_p[0];
-    uupw->cap.cb = uupw->now_cap.capsel_p[1];
+    uupw->cap.ca = uupw->now_cap.palette_index[0];
+    uupw->cap.cb = uupw->now_cap.palette_index[1];
     uupw->vs = uupw->virus_number;
     uupw->lv = uupw->virus_level;
     uupw->gs = uupw->cnd_now == dm_cnd_training;

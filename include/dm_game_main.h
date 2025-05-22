@@ -39,7 +39,8 @@ typedef enum TeamNumber {
 } TeamNumber;
 static_assert(TEAMNUMBER_MAX == MAX_PLAYERS, "");
 
-#define max_capsule_size 4
+// Keep temporarily at 2; game assumes size 2 arrays and is unplayable without it
+#define max_capsule_size 2
 
 typedef struct Capsule {
     /* 0x0 */ s8 pos_x[max_capsule_size]; /* Original name: pos_x */

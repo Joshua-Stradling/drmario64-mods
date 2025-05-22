@@ -622,9 +622,9 @@ void throw_rotate_capsel(Capsule *cap) {
         cap->pos_x[1]++;
         cap->pos_y[1]++;
 
-        save = cap->capsel_p[0];
-        cap->capsel_p[0] = cap->capsel_p[1];
-        cap->capsel_p[1] = save;
+        save = cap->palette_index[0];
+        cap->palette_index[0] = cap->palette_index[1];
+        cap->palette_index[1] = save;
 
         vec = 1;
     } else {
@@ -633,11 +633,11 @@ void throw_rotate_capsel(Capsule *cap) {
         vec = -1;
     }
 
-    for (i = 0; i < ARRAY_COUNT(cap->casel_g); i++) {
-        save = rotate_table_399[cap->casel_g[i]];
+    for (i = 0; i < ARRAY_COUNT(cap->sprite_index); i++) {
+        save = rotate_table_399[cap->sprite_index[i]];
         save += vec;
 
-        cap->casel_g[i] = rotate_mtx_400[save];
+        cap->sprite_index[i] = rotate_mtx_400[save];
     }
 }
 
@@ -648,7 +648,7 @@ void translate_capsel(GameMapCell *map, struct_game_state_data *state, s32 move_
     s32 vec = 0;
     Capsule *temp_s5 = &state->now_cap;
 
-    if ((temp_s5->pos_y[0] <= 0) || (temp_s5->capsel_flg_0 == 0)) {
+    if ((temp_s5->pos_y[0] <= 0) || (temp_s5->display_flag == 0)) {
         return;
     }
 
@@ -708,7 +708,7 @@ void rotate_capsel(GameMapCell *map, Capsule *cap, s32 move_vec) {
     s32 vec = 0;
     s32 save;
 
-    if ((cap->pos_y[0] <= 0) || (cap->capsel_flg_0 == 0)) {
+    if ((cap->pos_y[0] <= 0) || (cap->display_flag == 0)) {
         return;
     }
 
@@ -726,9 +726,9 @@ void rotate_capsel(GameMapCell *map, Capsule *cap, s32 move_vec) {
         if (vec != 0) {
             cap->pos_y[1]++;
             if (move_vec == -1) {
-                save = cap->capsel_p[0];
-                cap->capsel_p[0] = cap->capsel_p[1];
-                cap->capsel_p[1] = save;
+                save = cap->palette_index[0];
+                cap->palette_index[0] = cap->palette_index[1];
+                cap->palette_index[1] = save;
             }
         }
     } else {
@@ -748,9 +748,9 @@ void rotate_capsel(GameMapCell *map, Capsule *cap, s32 move_vec) {
         if (vec != 0) {
             cap->pos_y[1]--;
             if (move_vec == 1) {
-                save = cap->capsel_p[0];
-                cap->capsel_p[0] = cap->capsel_p[1];
-                cap->capsel_p[1] = save;
+                save = cap->palette_index[0];
+                cap->palette_index[0] = cap->palette_index[1];
+                cap->palette_index[1] = save;
             }
         }
     }
@@ -760,10 +760,10 @@ void rotate_capsel(GameMapCell *map, Capsule *cap, s32 move_vec) {
 
         dm_snd_play_in_game(SND_INDEX_67);
 
-        for (i = 0; i < ARRAY_COUNTU(cap->casel_g); i++) {
-            save = rotate_table_474[cap->casel_g[i]];
+        for (i = 0; i < ARRAY_COUNTU(cap->sprite_index); i++) {
+            save = rotate_table_474[cap->sprite_index[i]];
             save += vec;
-            cap->casel_g[i] = rotate_mtx_475[save];
+            cap->sprite_index[i] = rotate_mtx_475[save];
         }
     }
 }
@@ -1493,7 +1493,7 @@ bool dm_calc_capsel_pos(struct_game_state_data *state, s32 xx[2], s32 yy[2]) {
     int hh; // r28
 #endif
 
-    if (n_cap->capsel_flg_0 == 0) {
+    if (n_cap->display_flag == 0) {
         return false;
     }
 
@@ -1590,9 +1590,9 @@ void dm_draw_capsel_by_gfx(struct_game_state_data *state, s32 *xx, s32 *yy) {
     load_TexBlock_4b(tex->texs[TI_TEX_TEX], tex->info[TI_INFO_IDX_WIDTH], tex->info[TI_INFO_IDX_HEIGHT]);
 
     for (i = 0; i < 2; i++) {
-        pal = dm_game_get_capsel_pal(type, cap->capsel_p[i]);
+        pal = dm_game_get_capsel_pal(type, cap->palette_index[i]);
         load_TexPal(pal->texs[TI_TEX_TLUT]);
-        draw_Tex(xx[i], yy[i], state->map_item_size, state->map_item_size, 0, cap->casel_g[i] * state->map_item_size);
+        draw_Tex(xx[i], yy[i], state->map_item_size, state->map_item_size, 0, cap->sprite_index[i] * state->map_item_size);
     }
 }
 
@@ -1631,13 +1631,13 @@ void dm_draw_capsel_by_cpu_tentative(struct_game_state_data *state, s32 xx[2], s
             continue;
         }
 
-        tex_data = dm_game_get_capsel_pal(var_s5, cap->capsel_p[var_s1]);
+        tex_data = dm_game_get_capsel_pal(var_s5, cap->palette_index[var_s1]);
         tlut = tex_data->texs[TI_TEX_TLUT];
 
         tex_data = dm_game_get_capsel_tex(var_s5);
 
         ci4_texture = tex_data->texs[TI_TEX_TEX];
-        ci4_texture += (cap->casel_g[var_s1] * state->map_item_size * tex_data->info[TI_INFO_IDX_WIDTH]) >> 1;
+        ci4_texture += (cap->sprite_index[var_s1] * state->map_item_size * tex_data->info[TI_INFO_IDX_WIDTH]) >> 1;
 
         temp_a3_2 = (tex_data->info[TI_INFO_IDX_WIDTH] - state->map_item_size) >> 1;
 
@@ -2325,19 +2325,19 @@ void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
     }
 
     state->cap_speed_count = 0;
-    if (cap->capsel_flg_0 == 0) {
+    if (cap->display_flag == 0) {
         return;
     }
 
     if (cap->pos_y[0] > 0) {
         if (cap->pos_x[0] == cap->pos_x[1]) {
             if (get_map_info(map, cap->pos_x[0], cap->pos_y[0] + 1) != 0) {
-                cap->capsel_flg_1 = 0;
+                cap->falling_flag = 0;
             }
         } else {
             for (j = 0; j < ARRAY_COUNTU(cap->pos_x); j++) {
                 if (get_map_info(map, cap->pos_x[j], cap->pos_y[j] + 1) != 0) {
-                    cap->capsel_flg_1 = 0;
+                    cap->falling_flag = 0;
                     break;
                 }
             }
@@ -2346,12 +2346,12 @@ void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
 
     for (i = 0; i < ARRAY_COUNTU(cap->pos_y); i++) {
         if (cap->pos_y[i] == 0x10) {
-            cap->capsel_flg_1 = 0;
+            cap->falling_flag = 0;
             break;
         }
     }
 
-    if (cap->capsel_flg_1 != 0) {
+    if (cap->falling_flag != 0) {
         for (i = 0; i < ARRAY_COUNTU(cap->pos_y); i++) {
             if (cap->pos_y[i] < 0x10) {
                 cap->pos_y[i]++;
@@ -2361,25 +2361,25 @@ void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
         for (i = 0; i < ARRAY_COUNTU(cap->pos_x); i++) {
             if (get_map_info(map, cap->pos_x[i], cap->pos_y[i]) != 0) {
                 state->cnd_static = dm_cnd_game_over;
-                state->next_cap.capsel_flg_0 = 0;
-                cap->capsel_flg_1 = 0;
+                state->next_cap.display_flag = 0;
+                cap->falling_flag = 0;
                 break;
             }
         }
 
-        if (cap->capsel_flg_1 != 0) {
+        if (cap->falling_flag != 0) {
             return;
         }
     }
 
     dm_snd_play_in_game(SND_INDEX_66);
     state->mode_now = dm_mode_down_wait;
-    cap->capsel_flg_0 = 0;
+    cap->display_flag = 0;
 
     for (i = 0; i < ARRAY_COUNTU(cap->pos_y); i++) {
         if (cap->pos_y[i] != 0) {
-            set_map(map, cap->pos_x[i], cap->pos_y[i], cap->casel_g[i],
-                    cap->capsel_p[i] + black_color_1384[state->flg_game_over]);
+            set_map(map, cap->pos_x[i], cap->pos_y[i], cap->sprite_index[i],
+                    cap->palette_index[i] + black_color_1384[state->flg_game_over]);
         }
     }
 }
@@ -6343,7 +6343,7 @@ void dm_game_graphic_common(struct_game_state_data *state, s32 player_no, GameMa
             return;
         }
 
-        if ((state->now_cap.pos_y[0] <= 0) || (state->now_cap.capsel_flg_0 == 0)) {
+        if ((state->now_cap.pos_y[0] <= 0) || (state->now_cap.display_flag == 0)) {
             return;
         }
 
@@ -6360,14 +6360,14 @@ void dm_game_graphic_common(struct_game_state_data *state, s32 player_no, GameMa
             s32 y;
             s32 size;
 
-            tex = dm_game_get_capsel_pal(size_flg, cap->capsel_p[i]);
+            tex = dm_game_get_capsel_pal(size_flg, cap->palette_index[i]);
             load_TexPal(tex->texs[TI_TEX_TLUT]);
             size = state->map_item_size;
             x = cap->pos_x[i] * size + state->map_x;
             y = fallPosY[i] * size + state->map_y;
 
             gSPTextureRectangle(gGfxHead++, (x * 4), (y * 4), ((x + size) * 4), ((y + size) * 4), G_TX_RENDERTILE,
-                                0x0000, (cap->casel_g[i] * size << 5), 1 << 10, 1 << 10);
+                                0x0000, (cap->sprite_index[i] * size << 5), 1 << 10, 1 << 10);
         }
 
         gDPSetPrimColor(gGfxHead++, 0, 0, 255, 255, 255, 255);
@@ -6402,15 +6402,15 @@ void dm_game_graphic_p(struct_game_state_data *state, s32 player_no, GameMapCell
         }
     }
 
-    if ((state->next_cap.capsel_flg_0 == 0) || (state->now_cap.pos_y[0] <= 0)) {
+    if ((state->next_cap.display_flag == 0) || (state->now_cap.pos_y[0] <= 0)) {
         return;
     }
 
-    for (i = 0; i < STRUCT_GAME_STATE_DATA_UNK_178_UNK_LEN; i++) {
-        load_TexPal(dm_game_get_capsel_pal(size_flg, state->next_cap.capsel_p[i])->texs[TI_TEX_TLUT]);
+    for (i = 0; i < state->next_cap.piece_count; i++) {
+        load_TexPal(dm_game_get_capsel_pal(size_flg, state->next_cap.palette_index[i])->texs[TI_TEX_TLUT]);
         draw_Tex(state->next_cap.pos_x[i] * state->map_item_size + state->map_x,
                  (state->next_cap.pos_y[i] * state->map_item_size + state->map_y) - 0xA, state->map_item_size,
-                 state->map_item_size, 0, state->next_cap.casel_g[i] * state->map_item_size);
+                 state->map_item_size, 0, state->next_cap.sprite_index[i] * state->map_item_size);
     }
 }
 
@@ -6450,15 +6450,15 @@ void dm_game_graphic_1p(struct_game_state_data *state, s32 player_no, GameMapCel
         }
     }
 
-    if ((state->next_cap.capsel_flg_0 == 0) || (state->now_cap.pos_y[0] <= 0) || (state->cnd_static != dm_cnd_wait)) {
+    if ((state->next_cap.display_flag == 0) || (state->now_cap.pos_y[0] <= 0) || (state->cnd_static != dm_cnd_wait)) {
         return;
     }
 
     for (i = 0; i < 2; i++) {
-        TiTexData *tex = dm_game_get_capsel_pal(0, state->next_cap.capsel_p[i]);
+        TiTexData *tex = dm_game_get_capsel_pal(0, state->next_cap.palette_index[i]);
 
         load_TexPal(tex->texs[TI_TEX_TLUT]);
-        draw_Tex(0xDA + i * 0xA, 0x34, 0xA, 0xA, 0, state->next_cap.casel_g[i] * 0xA);
+        draw_Tex(0xDA + i * 0xA, 0x34, 0xA, 0xA, 0, state->next_cap.sprite_index[i] * 0xA);
     }
 }
 
@@ -6916,15 +6916,15 @@ void key_control_main(struct_game_state_data *state, GameMapCell *map, s32 playe
         st->force_draw_capsel_count[player_no] = 2;
     } else {
         if (st->force_draw_capsel_count[player_no] != 0) {
-            s32 bak = state->now_cap.capsel_flg_0;
+            s32 bak = state->now_cap.display_flag;
 
-            state->now_cap.capsel_flg_0 = 1;
+            state->now_cap.display_flag = 1;
             if (!st->demo_flag) {
                 if (dm_calc_capsel_pos(state, xx, yy)) {
                     dm_draw_capsel_by_cpu_tentative(state, xx, yy);
                 }
             }
-            state->now_cap.capsel_flg_0 = bak;
+            state->now_cap.display_flag = bak;
             st->force_draw_capsel_count[player_no]--;
         }
 
