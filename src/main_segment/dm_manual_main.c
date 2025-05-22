@@ -519,7 +519,7 @@ s32 dm_manual_main_cnt(struct_game_state_data *gameStateData, GameMapCell *mapCe
  */
 void dm_manual_make_key(struct_game_state_data *gameStateData, GameMapCell *mapCells) {
     struct_watchManual *temp_s2 = watchManual;
-    struct_game_state_data_unk_178 *temp_s4 = &gameStateData->unk_178;
+    Capsule *temp_s4 = &gameStateData->current_capsule;
     u16 key;
 
     aifKeyOut(gameStateData);
@@ -543,7 +543,7 @@ void dm_manual_make_key(struct_game_state_data *gameStateData, GameMapCell *mapC
     }
 
     gameStateData->unk_030 = 1;
-    if ((key & D_JPAD) && (temp_s4->unk_2[0] > 0)) {
+    if ((key & D_JPAD) && (temp_s4->y[0] > 0)) {
         s32 temp_v1;
 
         temp_v1 = FallSpeed[gameStateData->unk_02D];
@@ -560,7 +560,7 @@ bool dm_manual_1_main(void) {
     bool var_s6 = true;
     GameMapCell *mapCells = game_map_data[0];
     struct_game_state_data *gameStateDataP = game_state_data;
-    struct_game_state_data_unk_178 *unk_178 = &gameStateDataP->unk_178;
+    Capsule *unk_178 = &gameStateDataP->current_capsule;
     s32 var_s5;
     s32 var_s1;
 
@@ -650,30 +650,30 @@ bool dm_manual_1_main(void) {
         case 0x2A:
             gameStateDataP->unk_030 = 1;
 
-            switch (unk_178->unk_2[0]) {
+            switch (unk_178->y[0]) {
                 case 0x4:
-                    if (unk_178->unk_2[0] == unk_178->unk_2[1]) {
+                    if (unk_178->y[0] == unk_178->y[1]) {
                         rotate_capsel(mapCells, unk_178, -1);
                         temp_s2->unk_01C[3] = 8;
                     }
                     break;
 
                 case 0x6:
-                    if (unk_178->unk_2[0] != unk_178->unk_2[1]) {
+                    if (unk_178->y[0] != unk_178->y[1]) {
                         rotate_capsel(mapCells, unk_178, -1);
                         temp_s2->unk_01C[3] = 8;
                     }
                     break;
 
                 case 0x8:
-                    if (unk_178->unk_2[0] == unk_178->unk_2[1]) {
+                    if (unk_178->y[0] == unk_178->y[1]) {
                         rotate_capsel(mapCells, unk_178, 1);
                         temp_s2->unk_01C[2] = 8;
                     }
                     break;
 
                 case 0xA:
-                    if (unk_178->unk_2[0] != unk_178->unk_2[1]) {
+                    if (unk_178->y[0] != unk_178->y[1]) {
                         rotate_capsel(mapCells, unk_178, 1);
                         temp_s2->unk_01C[2] = 8;
                     }
