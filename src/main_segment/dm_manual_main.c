@@ -620,7 +620,7 @@ DmMainCnt dm_manual_main_cnt(struct_game_state_data *state, GameMapCell *mapCell
  */
 void dm_manual_make_key(struct_game_state_data *state, GameMapCell *mapCells) {
     struct_watchManual *st = watchManual;
-    struct_game_state_data_now_cap *cap = &state->now_cap;
+    Capsule *cap = &state->now_cap;
     u16 key;
 
     aifKeyOut(state);
@@ -661,7 +661,7 @@ bool dm_manual_1_main(void) {
     bool res = true;
     GameMapCell *mapCells = game_map_data[0];
     struct_game_state_data *state = game_state_data;
-    struct_game_state_data_now_cap *cap = &state->now_cap;
+    Capsule *cap = &state->now_cap;
     DmMainCnt ret;
     s32 i;
 

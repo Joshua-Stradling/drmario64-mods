@@ -613,7 +613,7 @@ const s32 rotate_mtx_400[] = {
 /**
  * Original name: throw_rotate_capsel
  */
-void throw_rotate_capsel(struct_game_state_data_now_cap *cap) {
+void throw_rotate_capsel(Capsule *cap) {
     s32 i;
     s32 vec;
     s32 save;
@@ -646,7 +646,7 @@ void throw_rotate_capsel(struct_game_state_data_now_cap *cap) {
  */
 void translate_capsel(GameMapCell *map, struct_game_state_data *state, s32 move_vec, s32 joy_no) {
     s32 vec = 0;
-    struct_game_state_data_now_cap *temp_s5 = &state->now_cap;
+    Capsule *temp_s5 = &state->now_cap;
 
     if ((temp_s5->pos_y[0] <= 0) || (temp_s5->capsel_flg_0 == 0)) {
         return;
@@ -704,7 +704,7 @@ void translate_capsel(GameMapCell *map, struct_game_state_data *state, s32 move_
 /**
  * Original name: rotate_capsel
  */
-void rotate_capsel(GameMapCell *map, struct_game_state_data_now_cap *cap, s32 move_vec) {
+void rotate_capsel(GameMapCell *map, Capsule *cap, s32 move_vec) {
     s32 vec = 0;
     s32 save;
 
@@ -803,26 +803,27 @@ void dm_make_magazine(void) {
 /**
  * Original name: dm_init_capsel
  */
-void dm_init_capsel(struct_game_state_data_now_cap *cap, u32 left_cap_col, u32 right_cap_col) {
+void dm_init_capsel(Capsule *cap, u32 left_cap_col, u32 right_cap_col) {
     cap->pos_x[0] = 3;
     cap->pos_x[1] = 4;
     cap->pos_y[1] = 0;
     cap->pos_y[0] = 0;
-    cap->casel_g[0] = 2;
-    cap->casel_g[1] = 3;
-    cap->capsel_p[0] = left_cap_col;
-    cap->capsel_p[1] = right_cap_col;
-    cap->capsel_flg_0 = 1;
+    cap->sprite_index[0] = 2;
+    cap->sprite_index[1] = 3;
+    cap->palette_index[0] = left_cap_col;
+    cap->palette_index[1] = right_cap_col;
+    cap->piece_count = 2;
+    cap->display_flag = 1;
     cap->capsel_flg_2 = 0;
-    cap->capsel_flg_1 = 0;
+    cap->falling_flag = 0;
 }
 
 /**
  * Original name: dm_init_capsel_go
  */
-void dm_init_capsel_go(struct_game_state_data_now_cap *cap, s32 left_cap_col, s32 right_cap_col) {
+void dm_init_capsel_go(Capsule *cap, s32 left_cap_col, s32 right_cap_col) {
     dm_init_capsel(cap, left_cap_col, right_cap_col);
-    cap->capsel_flg_1 = 1;
+    cap->falling_flag = 1;
 }
 
 /**
@@ -1477,7 +1478,7 @@ void dm_calc_erase_score_pos(struct_game_state_data *state, GameMapCell *map, dm
  * Original name: dm_calc_capsel_pos
  */
 bool dm_calc_capsel_pos(struct_game_state_data *state, s32 xx[2], s32 yy[2]) {
-    struct_game_state_data_now_cap *n_cap = &state->now_cap;
+    Capsule *n_cap = &state->now_cap;
     s32 var_t0;
     s32 what = 0x24;
 
@@ -1570,7 +1571,7 @@ bool dm_calc_capsel_pos(struct_game_state_data *state, s32 xx[2], s32 yy[2]) {
  * Original name: dm_draw_capsel_by_gfx
  */
 void dm_draw_capsel_by_gfx(struct_game_state_data *state, s32 *xx, s32 *yy) {
-    struct_game_state_data_now_cap *cap = &state->now_cap;
+    Capsule *cap = &state->now_cap;
     s32 type;
     TiTexData *tex;
     TiTexData *pal;
@@ -1603,7 +1604,7 @@ void dm_draw_capsel_by_gfx(struct_game_state_data *state, s32 *xx, s32 *yy) {
  * Does this by drawing directly to the framebuffer instead of using the gfx microcode.
  */
 void dm_draw_capsel_by_cpu_tentative(struct_game_state_data *state, s32 xx[2], s32 yy[2]) {
-    struct_game_state_data_now_cap *cap = &state->now_cap;
+    Capsule *cap = &state->now_cap;
     TiTexData *tex_data;
     s32 var_s1;
     s32 var_s5;
@@ -2300,7 +2301,7 @@ static_assert(ARRAY_COUNT(black_color_1384) == 2, "indexed by bool");
  */
 void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
     struct_watchGame *st = watchGame;
-    struct_game_state_data_now_cap *cap = &state->now_cap;
+    Capsule *cap = &state->now_cap;
     s32 i;
     s32 j;
 
@@ -5590,7 +5591,7 @@ void dm_map_draw(GameMapCell *mapCells, u8 col_no, s16 x_p, s16 y_p, s8 size) {
 /**
  * Original name: dm_find_fall_point
  */
-void dm_find_fall_point(GameMapCell *map, struct_game_state_data_now_cap *cap, s32 fallPosY[2]) {
+void dm_find_fall_point(GameMapCell *map, Capsule *cap, s32 fallPosY[2]) {
     s32 minY = 0x10;
     s32 i;
     int row;
@@ -6336,7 +6337,7 @@ void dm_game_graphic_common(struct_game_state_data *state, s32 player_no, GameMa
 
     if (!UNK_PLAYER0_CHECK(state, player_no)) {
         s32 fallPosY[2];
-        struct_game_state_data_now_cap *cap;
+        Capsule *cap;
 
         if ((visible_fall_point[player_no] == 0) || (state->mode_now != dm_mode_down)) {
             return;
@@ -6865,7 +6866,7 @@ void key_control_main(struct_game_state_data *state, GameMapCell *map, s32 playe
         }
     } else if (state->mode_now == dm_mode_down) {
         if (state->cnd_static == dm_cnd_wait) {
-            struct_game_state_data_now_cap *cap;
+            Capsule *cap;
 
             if (UNK_PLAYER0_CHECK(state, player_no)) {
                 u16 temp_s1_2 = joygam[player_no];

@@ -269,7 +269,7 @@ void go_down(struct_game_state_data *state, GameMapCell *map, s32 cout);
 void erase_anime(GameMapCell *map);
 
 void translate_capsel(GameMapCell *map, struct_game_state_data *state, s32 move_vec, s32 joy_no);
-void rotate_capsel(GameMapCell *map, struct_game_state_data_now_cap *cap, s32 move_vec);
+void rotate_capsel(GameMapCell *map, Capsule *cap, s32 move_vec);
 
 void dm_set_capsel(struct_game_state_data *state);
 void dm_capsel_speed_up(struct_game_state_data *state);
@@ -311,7 +311,7 @@ struct TiTexData *dm_game_get_capsel_pal(s32 sizeIndex, s32 colorIndex);
 void draw_star_base(Gfx **gfxP, s32 x, s32 y, bool cached);
 
 void dm_map_draw(GameMapCell *mapCells, u8 col_no, s16 x_p, s16 y_p, s8 size);
-void dm_find_fall_point(GameMapCell *map, struct_game_state_data_now_cap *cap, s32 fallPosY[2]);
+void dm_find_fall_point(GameMapCell *map, Capsule *cap, s32 fallPosY[2]);
 void draw_virus_number(Gfx **gfxP, u32 number, s32 x, s32 y, f32 sx, f32 arg5);
 void draw_count_number(Gfx **gfxP, s32 color, s32 column, u32 number, s32 x, s32 y);
 void draw_time(Gfx **gfxP, u32 time, s32 x, s32 y);
