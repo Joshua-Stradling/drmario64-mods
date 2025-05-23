@@ -633,7 +633,7 @@ void throw_rotate_capsel(Capsule *cap) {
         vec = -1;
     }
 
-    for (i = 0; i < ARRAY_COUNT(cap->sprite_index); i++) {
+    for (i = 0; i < cap->piece_count; i++) {
         save = rotate_table_399[cap->sprite_index[i]];
         save += vec;
 
@@ -760,7 +760,7 @@ void rotate_capsel(GameMapCell *map, Capsule *cap, s32 move_vec) {
 
         dm_snd_play_in_game(SND_INDEX_67);
 
-        for (i = 0; i < ARRAY_COUNTU(cap->sprite_index); i++) {
+        for (i = 0; i < cap->piece_count; i++) {
             save = rotate_table_474[cap->sprite_index[i]];
             save += vec;
             cap->sprite_index[i] = rotate_mtx_475[save];
@@ -2335,7 +2335,7 @@ void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
                 cap->falling_flag = 0;
             }
         } else {
-            for (j = 0; j < ARRAY_COUNTU(cap->pos_x); j++) {
+            for (j = 0; j < cap->piece_count; j++) {
                 if (get_map_info(map, cap->pos_x[j], cap->pos_y[j] + 1) != 0) {
                     cap->falling_flag = 0;
                     break;
@@ -2344,7 +2344,7 @@ void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
         }
     }
 
-    for (i = 0; i < ARRAY_COUNTU(cap->pos_y); i++) {
+    for (i = 0; i < cap->piece_count; i++) {
         if (cap->pos_y[i] == 0x10) {
             cap->falling_flag = 0;
             break;
@@ -2352,13 +2352,13 @@ void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
     }
 
     if (cap->falling_flag != 0) {
-        for (i = 0; i < ARRAY_COUNTU(cap->pos_y); i++) {
+        for (i = 0; i < cap->piece_count; i++) {
             if (cap->pos_y[i] < 0x10) {
                 cap->pos_y[i]++;
             }
         }
 
-        for (i = 0; i < ARRAY_COUNTU(cap->pos_x); i++) {
+        for (i = 0; i < cap->piece_count; i++) {
             if (get_map_info(map, cap->pos_x[i], cap->pos_y[i]) != 0) {
                 state->cnd_static = dm_cnd_game_over;
                 state->next_cap.display_flag = 0;
@@ -2376,7 +2376,7 @@ void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
     state->mode_now = dm_mode_down_wait;
     cap->display_flag = 0;
 
-    for (i = 0; i < ARRAY_COUNTU(cap->pos_y); i++) {
+    for (i = 0; i < cap->piece_count; i++) {
         if (cap->pos_y[i] != 0) {
             set_map(map, cap->pos_x[i], cap->pos_y[i], cap->sprite_index[i],
                     cap->palette_index[i] + black_color_1384[state->flg_game_over]);
