@@ -1907,86 +1907,113 @@ const s32 black_color_1384[] = { 0, 3 };
  * Original name: dm_capsel_down
  */
 void dm_capsel_down(struct_game_state_data *gameStateData, GameMapCell *mapCells) {
-    struct_watchGame *watchGameP = watchGame;
-    Capsule *temp_s2 = &gameStateData->current_capsule;
-    s32 var_s0_2;
-    s32 var_s1_2;
+    Capsule *capsule = &gameStateData->current_capsule;
+    s8 deepest_y;
+    s32 current_fall_delay;
+    s32 speed_delay;
+    s8 i;
 
-    if (temp_s2->y[0] > 0) {
-        var_s0_2 = FallSpeed[gameStateData->unk_02D];
-        if ((temp_s2->y[0] < 4) && (temp_s2->y[0] > 0)) {
-            var_s0_2 += BonusWait[temp_s2->y[0] - 1][gameStateData->unk_02C];
+    // Calculate capsule speed if it has dropped
+    if (capsule->y[0] > 0) {
+        current_fall_delay = FallSpeed[gameStateData->unk_02D];
+
+        // Add delay if all of the capsule is above y=4. Index 1 is 
+        // never deeper than index 0 because of rotational logic.
+        deepest_y = capsule->y[0];
+        i = 2;
+        while (deepest_y < 4 && i < capsule->piece_count) {
+            if (capsule->y[i] > deepest_y) {
+                deepest_y = capsule->y[i];
+            }
+            i++;
         }
-        var_s1_2 = 0;
-        if (get_map_info(mapCells, gameStateData->current_capsule.x[0], temp_s2->y[0] + 1) != 0) {
-            var_s1_2 = watchGameP->unk_898;
+        if (deepest_y < 4) {
+            current_fall_delay += BonusWait[deepest_y - 1][gameStateData->unk_02C];
         }
-        gameStateData->unk_031 = var_s0_2 + var_s1_2;
-    } else {
+
+        // Add delay if any given part of capsule is blocked
+        speed_delay = 0;
+        for (i = 0; i < capsule->piece_count; i++) {
+            if (get_map_info(mapCells, capsule->x[i], capsule->y[i] + 1) != 0) {
+                speed_delay = watchGame->unk_898;
+                break;
+            }
+        }
+        
+        gameStateData->unk_031 = current_fall_delay + speed_delay;
+    }
+    
+    // If capsule hasn't dropped, continue at a constant rate
+    else {
         gameStateData->unk_031 = 0x1E;
     }
 
-    gameStateData->unk_02F = gameStateData->unk_02F + gameStateData->unk_030;
+    // If not enough gravity has taken effect, don't drop the capsule this frame
+    gameStateData->unk_02F += gameStateData->unk_030;
     if (gameStateData->unk_02F < gameStateData->unk_031) {
         return;
     }
 
+    // Reset gravity counter
     gameStateData->unk_02F = 0;
-    if (temp_s2->display_flag == 0) {
+
+    // Do not drop capsule if it is just for preview
+    if (capsule->display_flag == 0) {
         return;
     }
 
-    if (temp_s2->y[0] > 0) {
-        if (temp_s2->x[0] == temp_s2->x[1]) {
-            if (get_map_info(mapCells, temp_s2->x[0], temp_s2->y[0] + 1) != 0) {
-                temp_s2->falling_flag = 0;
-            }
-        } else {
-            for (var_s1_2 = 0; var_s1_2 < temp_s2->piece_count; var_s1_2++) {
-                if (get_map_info(mapCells, temp_s2->x[var_s1_2], temp_s2->y[var_s1_2] + 1) != 0) {
-                    temp_s2->falling_flag = 0;
-                    break;
-                }
+    // Lock capsule if there is something directly beneath any part of it (including the floor)
+    if (capsule->y[0] > 0) {
+        for (i = 0; i < capsule->piece_count; i++) {
+            if (capsule->y[i] == 16 || 
+                get_map_info(mapCells, capsule->x[i], capsule->y[i] + 1)
+            ) {
+                capsule->falling_flag = 0;
+                break;
             }
         }
     }
 
-    for (var_s0_2 = 0; var_s0_2 < temp_s2->piece_count; var_s0_2++) {
-        if (temp_s2->y[var_s0_2] == 0x10) {
-            temp_s2->falling_flag = 0;
-            break;
-        }
-    }
-
-    if (temp_s2->falling_flag != 0) {
-        for (var_s0_2 = 0; var_s0_2 < temp_s2->piece_count; var_s0_2++) {
-            if (temp_s2->y[var_s0_2] < 0x10) {
-                temp_s2->y[var_s0_2]++;
-            }
+    // Fall if it's allowed
+    if (capsule->falling_flag != 0) {
+        for (i = 0; i < capsule->piece_count; i++) {
+            capsule->y[i]++;
         }
 
-        for (var_s0_2 = 0; var_s0_2 < temp_s2->piece_count; var_s0_2++) {
-            if (get_map_info(mapCells, temp_s2->x[var_s0_2], temp_s2->y[var_s0_2]) != 0) {
+        // Check for fall overlap (and trigger game over)
+        for (i = 0; i < capsule->piece_count; i++) {
+            if (get_map_info(mapCells, capsule->x[i], capsule->y[i])) {
                 gameStateData->unk_020 = 4;
                 gameStateData->preview_capsule.display_flag = 0;
-                temp_s2->falling_flag = 0;
+                capsule->falling_flag = 0;
                 break;
             }
         }
 
-        if (temp_s2->falling_flag != 0) {
+        // If the capsule is still falling, don't lock it onto playing field
+        if (capsule->falling_flag) {
             return;
         }
     }
 
+    // Transition capsule from falling to part of the playing field
     dm_snd_play_in_game(SND_INDEX_66);
     gameStateData->unk_00C = GAMESTATEDATA_UNK_00C_5;
-    temp_s2->display_flag = 0;
+    capsule->display_flag = 0;
 
-    for (var_s0_2 = 0; var_s0_2 < temp_s2->piece_count; var_s0_2++) {
-        if (temp_s2->y[var_s0_2] != 0) {
-            set_map(mapCells, temp_s2->x[var_s0_2], temp_s2->y[var_s0_2], temp_s2->sprite_index[var_s0_2],
-                    temp_s2->palette_index[var_s0_2] + black_color_1384[gameStateData->unk_049]);
+    for (i = 0; i < capsule->piece_count; i++) {
+
+        // Add capsule piece to the map if it's not above the ceiling
+        if (capsule->y[i] > 0) {
+            set_map(mapCells, capsule->x[i], capsule->y[i], capsule->sprite_index[i],
+                capsule->palette_index[i] + black_color_1384[gameStateData->unk_049]);
+            
+            // If this is a garbage piece, mark that it is unstable, so 
+            // that it will fall when go_down() is called
+            if (i > 1) {
+                s32 index = GAME_MAP_GET_INDEX(capsule->y[i] - 1, capsule->x[i]);
+                mapCells[index].unk_4[1] = 1;
+            }
         }
     }
 }
