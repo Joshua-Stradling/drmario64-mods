@@ -158,8 +158,7 @@ typedef struct struct_game_state_data_unk_140 {
     /* 0x04 */ UNK_TYPE1 unk_04[0x20];
 } struct_game_state_data_unk_140; // size = 0x24
 
-// Keep temporarily at 2; game assumes size 2 arrays and is unplayable without it
-#define max_capsule_size 2
+#define max_capsule_size 4
 
 // First 2 indexes are a connected domino, any additional are garbage 
 // that will fall independently after the capsule lands.

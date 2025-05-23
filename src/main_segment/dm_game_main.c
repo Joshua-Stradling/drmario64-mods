@@ -456,7 +456,7 @@ void throw_rotate_capsel(Capsule *arg0) {
         var_t0 = -1;
     }
 
-    for (i = 0; i < ARRAY_COUNT(arg0->sprite_index); i++) {
+    for (i = 0; i < arg0->piece_count; i++) {
         temp_a2 = rotate_table_399[arg0->sprite_index[i]];
         temp_a2 += var_t0;
 
@@ -577,7 +577,7 @@ void rotate_capsel(GameMapCell *mapCells, Capsule *arg1, s32 arg2) {
 
         dm_snd_play_in_game(SND_INDEX_67);
 
-        for (i = 0; i < ARRAY_COUNTU(arg1->sprite_index); i++) {
+        for (i = 0; i < arg1->piece_count; i++) {
             temp = rotate_table_474[arg1->sprite_index[i]];
             temp += var_s1;
             arg1->sprite_index[i] = rotate_mtx_475[temp];
@@ -1942,7 +1942,7 @@ void dm_capsel_down(struct_game_state_data *gameStateData, GameMapCell *mapCells
                 temp_s2->falling_flag = 0;
             }
         } else {
-            for (var_s1_2 = 0; var_s1_2 < ARRAY_COUNTU(temp_s2->x); var_s1_2++) {
+            for (var_s1_2 = 0; var_s1_2 < temp_s2->piece_count; var_s1_2++) {
                 if (get_map_info(mapCells, temp_s2->x[var_s1_2], temp_s2->y[var_s1_2] + 1) != 0) {
                     temp_s2->falling_flag = 0;
                     break;
@@ -1951,7 +1951,7 @@ void dm_capsel_down(struct_game_state_data *gameStateData, GameMapCell *mapCells
         }
     }
 
-    for (var_s0_2 = 0; var_s0_2 < ARRAY_COUNTU(temp_s2->y); var_s0_2++) {
+    for (var_s0_2 = 0; var_s0_2 < temp_s2->piece_count; var_s0_2++) {
         if (temp_s2->y[var_s0_2] == 0x10) {
             temp_s2->falling_flag = 0;
             break;
@@ -1959,13 +1959,13 @@ void dm_capsel_down(struct_game_state_data *gameStateData, GameMapCell *mapCells
     }
 
     if (temp_s2->falling_flag != 0) {
-        for (var_s0_2 = 0; var_s0_2 < ARRAY_COUNTU(temp_s2->y); var_s0_2++) {
+        for (var_s0_2 = 0; var_s0_2 < temp_s2->piece_count; var_s0_2++) {
             if (temp_s2->y[var_s0_2] < 0x10) {
                 temp_s2->y[var_s0_2]++;
             }
         }
 
-        for (var_s0_2 = 0; var_s0_2 < ARRAY_COUNTU(temp_s2->x); var_s0_2++) {
+        for (var_s0_2 = 0; var_s0_2 < temp_s2->piece_count; var_s0_2++) {
             if (get_map_info(mapCells, temp_s2->x[var_s0_2], temp_s2->y[var_s0_2]) != 0) {
                 gameStateData->unk_020 = 4;
                 gameStateData->preview_capsule.display_flag = 0;
@@ -1983,7 +1983,7 @@ void dm_capsel_down(struct_game_state_data *gameStateData, GameMapCell *mapCells
     gameStateData->unk_00C = GAMESTATEDATA_UNK_00C_5;
     temp_s2->display_flag = 0;
 
-    for (var_s0_2 = 0; var_s0_2 < ARRAY_COUNTU(temp_s2->y); var_s0_2++) {
+    for (var_s0_2 = 0; var_s0_2 < temp_s2->piece_count; var_s0_2++) {
         if (temp_s2->y[var_s0_2] != 0) {
             set_map(mapCells, temp_s2->x[var_s0_2], temp_s2->y[var_s0_2], temp_s2->sprite_index[var_s0_2],
                     temp_s2->palette_index[var_s0_2] + black_color_1384[gameStateData->unk_049]);
