@@ -2300,86 +2300,112 @@ static_assert(ARRAY_COUNT(black_color_1384) == 2, "indexed by bool");
  * Original name: dm_capsel_down
  */
 void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
-    struct_watchGame *st = watchGame;
-    Capsule *cap = &state->now_cap;
-    s32 i;
-    s32 j;
+    Capsule *capsule = &state->now_cap;
+    s8 deepest_y;
+    s32 current_fall_delay;
+    s32 speed_delay;
+    s8 i;
 
-    if (cap->pos_y[0] > 0) {
-        i = FallSpeed[state->cap_speed];
-        if ((cap->pos_y[0] < 4) && (cap->pos_y[0] > 0)) {
-            i += BonusWait[cap->pos_y[0] - 1][state->cap_def_speed];
+    // Calculate capsule speed if it has dropped
+    if (capsule->pos_y[0] > 0) {
+        current_fall_delay = FallSpeed[state->cap_speed];
+
+        // Add delay if all of the capsule is above y=4. Index 1 is 
+        // never deeper than index 0 because of rotational logic.
+        deepest_y = capsule->y[0];
+        i = 2;
+        while (deepest_y < 4 && i < capsule->piece_count) {
+            if (capsule->pos_y[i] > deepest_y) {
+                deepest_y = capsule->y[i];
+            }
+            i++;
         }
-        j = 0;
-        if (get_map_info(map, state->now_cap.pos_x[0], cap->pos_y[0] + 1) != 0) {
-            j = st->touch_down_wait;
+        if (deepest_y < 4) {
+            current_fall_delay += BonusWait[deepest_y - 1][state->cap_def_speed];
         }
-        state->cap_speed_max = i + j;
-    } else {
+
+        // Add delay if any given part of capsule is blocked
+        speed_delay = 0;
+        for (i = 0; i < capsule->piece_count; i++) {
+            if (get_map_info(map, capsule->pos_x[i], capsule->pos_y[i] + 1) != 0) {
+                speed_delay = st->touch_down_wait;
+                break;
+            }
+        }
+        
+        state->cap_speed_max = current_fall_delay + speed_delay;
+    }
+    
+    // If capsule hasn't dropped, continue at a constant rate
+    else {
         state->cap_speed_max = 30;
     }
 
+    // If not enough gravity has taken effect, don't drop the capsule this frame
     state->cap_speed_count = state->cap_speed_count + state->cap_speed_vec;
     if (state->cap_speed_count < state->cap_speed_max) {
         return;
     }
 
+    // Reset gravity counter
     state->cap_speed_count = 0;
-    if (cap->display_flag == 0) {
+
+    if (capsule->display_flag == 0) {
         return;
     }
 
-    if (cap->pos_y[0] > 0) {
-        if (cap->pos_x[0] == cap->pos_x[1]) {
-            if (get_map_info(map, cap->pos_x[0], cap->pos_y[0] + 1) != 0) {
-                cap->falling_flag = 0;
-            }
-        } else {
-            for (j = 0; j < cap->piece_count; j++) {
-                if (get_map_info(map, cap->pos_x[j], cap->pos_y[j] + 1) != 0) {
-                    cap->falling_flag = 0;
-                    break;
-                }
+    // Lock capsule if there is something directly beneath any part of it (including the floor)
+    if (capsule->pos_y[0] > 0) {
+        for (i = 0; i < capsule->piece_count; i++) {
+            if (capsule->pos_y[i] == 16 || 
+                get_map_info(map, capsule->pos_x[i], capsule->pos_y[i] + 1)
+            ) {
+                capsule->falling_flag = 0;
+                break;
             }
         }
     }
 
-    for (i = 0; i < cap->piece_count; i++) {
-        if (cap->pos_y[i] == 0x10) {
-            cap->falling_flag = 0;
-            break;
-        }
-    }
-
-    if (cap->falling_flag != 0) {
-        for (i = 0; i < cap->piece_count; i++) {
-            if (cap->pos_y[i] < 0x10) {
-                cap->pos_y[i]++;
-            }
+    // Fall if it's allowed
+    if (capsule->falling_flag != 0) {
+        for (i = 0; i < capsule->piece_count; i++) {
+            capsule->pos_y[i]++;
         }
 
-        for (i = 0; i < cap->piece_count; i++) {
-            if (get_map_info(map, cap->pos_x[i], cap->pos_y[i]) != 0) {
+        // Check for fall overlap (and trigger game over)
+        for (i = 0; i < capsule->piece_count; i++) {
+            if (get_map_info(map, capsule->pos_x[i], capsule->pos_y[i])) {
                 state->cnd_static = dm_cnd_game_over;
                 state->next_cap.display_flag = 0;
-                cap->falling_flag = 0;
+                capsule->falling_flag = 0;
                 break;
             }
         }
 
-        if (cap->falling_flag != 0) {
+        // If the capsule is still falling, don't lock it onto playing field
+        if (capsule->falling_flag) {
             return;
         }
     }
 
+    // Transition capsule from falling to part of the playing field
     dm_snd_play_in_game(SND_INDEX_66);
     state->mode_now = dm_mode_down_wait;
-    cap->display_flag = 0;
+    capsule->display_flag = 0;
 
-    for (i = 0; i < cap->piece_count; i++) {
-        if (cap->pos_y[i] != 0) {
-            set_map(map, cap->pos_x[i], cap->pos_y[i], cap->sprite_index[i],
-                    cap->palette_index[i] + black_color_1384[state->flg_game_over]);
+    for (i = 0; i < capsule->piece_count; i++) {
+
+        // Add capsule piece to the map if it's not above the ceiling
+        if (capsule->pos_y[i] > 0) {
+            set_map(mapCells, capsule->pos_x[i], capsule->pos_y[i], capsule->sprite_index[i],
+                capsule->palette_index[i] + black_color_1384[state->flg_game_over]);
+            
+            // If this is a garbage piece, mark that it is unstable, so 
+            // that it will fall when go_down() is called
+            if (i > 1) {
+                s32 index = GAME_MAP_GET_INDEX(capsule->pos_y[i] - 1, capsule->pos_x[i]);
+                map[index].capsel_m_flg[1] = 1;
+            }
         }
     }
 }
