@@ -629,17 +629,40 @@ void create_capsule(Capsule *capsule, s32 left_color, s32 right_color) {
     capsule->piece_count = 2;
 }
 
-void create_falling_capsule(Capsule *capsule, s32 left_color, s32 right_color) {
-    create_capsule(capsule, left_color, right_color);
-    capsule->falling_flag = 1;
+// Sets game_state->current_capsule
+void create_falling_capsule(struct_game_state_data *game_state) {
+    Capsule *preview_capsule = &game_state->preview_capsule;
+    Capsule *current_capsule = &game_state->current_capsule;
+    u8 i;
+
+    // If there is a corresponding preview capsule, just copy that (if this 
+    // isn't singleplayer mode, because the create_falling_capsule is called 
+    // before and after fly-in animation)
+    if ((preview_capsule->display_flag == 1) && (evs_gamesel != ENUM_EVS_GAMESEL_0)) {
+        for (i = 0; i < preview_capsule->piece_count; i++) {
+            current_capsule->x[i] = preview_capsule->x[i];
+            current_capsule->y[i] = preview_capsule->y[i];
+            current_capsule->sprite_index[i] = preview_capsule->sprite_index[i];
+            current_capsule->palette_index[i] = preview_capsule->palette_index[i];  
+        }
+        current_capsule->display_flag = preview_capsule->display_flag;
+        current_capsule->unk_12 = preview_capsule->unk_12;
+        current_capsule->piece_count = preview_capsule->piece_count;
+    }
+
+    // Otherwise, create from magazine colors at current count
+    else { 
+        create_capsule(current_capsule, CAPSMAGAZINE_GET_A(CapsMagazine[game_state->unk_033]),
+                      CAPSMAGAZINE_GET_B(CapsMagazine[game_state->unk_033]));
+    }
+    current_capsule->falling_flag = 1;
 }
 
 void dm_set_capsel(struct_game_state_data *arg0) {
     arg0->unk_034 = 0;
 
-    create_falling_capsule(&arg0->current_capsule, CAPSMAGAZINE_GET_A(CapsMagazine[arg0->unk_032]),
-                  CAPSMAGAZINE_GET_B(CapsMagazine[arg0->unk_032]));
     arg0->unk_033 = arg0->unk_032;
+    create_falling_capsule(arg0);
 
     arg0->unk_032++;
     if (arg0->unk_032 >= 0xFE) {
@@ -2814,8 +2837,7 @@ s32 dm_game_main_cnt_1P(struct_game_state_data *gameStateData, GameMapCell *mapC
             gameStateData->unk_02F++;
 
             if (gameStateData->unk_02F == FlyingCnt[gameStateData->unk_02C]) {
-                create_falling_capsule(&gameStateData->current_capsule, (CapsMagazine[gameStateData->unk_033] >> 4) % 3,
-                              CapsMagazine[gameStateData->unk_033] % 3);
+                create_falling_capsule(gameStateData);
                 gameStateData->unk_00C = GAMESTATEDATA_UNK_00C_4;
                 gameStateData->unk_02F = 0x1E;
                 dm_capsel_down(gameStateData, mapCells);
@@ -6556,6 +6578,11 @@ void dm_game_init(bool arg0) {
         temp_s0_3->unk_02E = 0;
         temp_s0_3->unk_02F = 0;
         temp_s0_3->unk_034 = 0;
+
+        // Start with preview capsule not displayed (will update in dm_set_capsel, 
+        // but it needs to know if it is initialized before it runs)
+        temp_s0_3->preview_capsule.display_flag = 0;
+
         dm_set_capsel(temp_s0_3);
         temp_s0_3->unk_027 = 0;
         temp_s0_3->unk_029 = 0;
