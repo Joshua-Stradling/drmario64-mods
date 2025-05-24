@@ -821,9 +821,32 @@ void dm_init_capsel(Capsule *cap, u32 left_cap_col, u32 right_cap_col) {
 /**
  * Original name: dm_init_capsel_go
  */
-void dm_init_capsel_go(Capsule *cap, s32 left_cap_col, s32 right_cap_col) {
-    dm_init_capsel(cap, left_cap_col, right_cap_col);
-    cap->falling_flag = 1;
+void dm_init_capsel_go(struct_game_state_data *state) {
+    Capsule *preview_capsule = &state->next_cap;
+    Capsule *current_capsule = &state->now_cap;
+    u8 i;
+
+    // If there is a corresponding preview capsule, just copy that (if this 
+    // isn't singleplayer mode, because the create_falling_capsule is called 
+    // before and after fly-in animation)
+    if ((preview_capsule->display_flag == 1) && (evs_gamesel != GSL_1PLAY)) {
+        for (i = 0; i < preview_capsule->piece_count; i++) {
+            current_capsule->pos_x[i] = preview_capsule->pos_x[i];
+            current_capsule->pos_y[i] = preview_capsule->pos_y[i];
+            current_capsule->sprite_index[i] = preview_capsule->sprite_index[i];
+            current_capsule->palette_index[i] = preview_capsule->palette_index[i];  
+        }
+        current_capsule->display_flag = preview_capsule->display_flag;
+        current_capsule->capsel_flg_2 = preview_capsule->capsel_flg_2;
+        current_capsule->piece_count = preview_capsule->piece_count;
+    }
+
+    // Otherwise, create from magazine colors at current count
+    else { 
+        dm_init_capsel(current_capsule, CAPSMAGAZINE_GET_A(CapsMagazine[state->cap_magazine_save]),
+                      CAPSMAGAZINE_GET_B(CapsMagazine[state->cap_magazine_save]));
+    }
+    current_capsule->falling_flag = 1;
 }
 
 /**
@@ -832,9 +855,8 @@ void dm_init_capsel_go(Capsule *cap, s32 left_cap_col, s32 right_cap_col) {
 void dm_set_capsel(struct_game_state_data *state) {
     state->cap_move_se_flg = false;
 
-    dm_init_capsel_go(&state->now_cap, CAPSMAGAZINE_GET_A(CapsMagazine[state->cap_magazine_cnt]),
-                      CAPSMAGAZINE_GET_B(CapsMagazine[state->cap_magazine_cnt]));
     state->cap_magazine_save = state->cap_magazine_cnt;
+    dm_init_capsel_go(state);
 
     state->cap_magazine_cnt++;
     if (state->cap_magazine_cnt >= 254) {
@@ -3288,8 +3310,7 @@ DmMainCnt dm_game_main_cnt_1P(struct_game_state_data *state, GameMapCell *map, s
             state->cap_speed_count++;
 
             if (state->cap_speed_count == FlyingCnt[state->cap_def_speed]) {
-                dm_init_capsel_go(&state->now_cap, (CapsMagazine[state->cap_magazine_save] >> 4) % 3,
-                                  CapsMagazine[state->cap_magazine_save] % 3);
+                dm_init_capsel_go(state);
                 state->mode_now = dm_mode_down;
                 state->cap_speed_count = 30;
                 dm_capsel_down(state, map);
@@ -7238,6 +7259,11 @@ void dm_game_init(bool reinit) {
         temp_s0_3->cap_count = 0;
         temp_s0_3->cap_speed_count = 0;
         temp_s0_3->cap_move_se_flg = false;
+
+        // Start with preview capsule not displayed (will update in dm_set_capsel, 
+        // but it needs to know if it is initialized before it runs)
+        temp_s0_3->next_cap.display_flag = 0;
+
         dm_set_capsel(temp_s0_3);
         temp_s0_3->virus_anime = 0;
         temp_s0_3->virus_anime_count = 0;
