@@ -165,8 +165,8 @@ typedef struct struct_game_state_data_unk_140 {
 typedef struct Capsule {
     /* 0x0 */ s8 x[max_capsule_size];
     /* 0x4 */ s8 y[max_capsule_size];
-    /* 0x8 */ s8 sprite_index[max_capsule_size];
-    /* 0xC */ s8 palette_index[max_capsule_size];
+    /* 0x8 */ s8 sprite_index[max_capsule_size]; // texture
+    /* 0xC */ s8 palette_index[max_capsule_size]; // color
     /* 0x10 */ s8 display_flag;
     /* 0x11 */ s8 falling_flag;
     /* 0x12 */ s8 unk_12;
@@ -174,9 +174,13 @@ typedef struct Capsule {
 } Capsule; // size updated from 0xB to 0x14
 
 typedef struct Point {
-    int x;
-    int y;
+    s8 x, y;
 } Point;
+
+typedef struct ValidPoint {
+    s8 x, y;
+    bool is_valid;
+} ValidPoint;
 
 typedef struct struct_game_state_data_unk_050 {
     /* 0x0 */ u16 unk_0;
@@ -357,6 +361,14 @@ typedef struct struct_gameBackup {
     /* 0x2FF8 */ s32 highScore;
     /* 0x2FFC */ s32 gameTime;
 } struct_gameBackup; // updated size = 0x2FB8 + ((0x3D6 - 0x3C4) * 4) = 0x3000
+
+// Functions added for mod
+u8 get_player_index(struct_game_state_data *current_game_state);
+void add_garbage_to_capsule(Capsule *capsule, u8 garbage_colors[], u8 num_of_garbage);
+Point new_piece(Capsule *capsule);
+ValidPoint new_piece2(Capsule *capsule, Point index_point, u8 x_or_y);
+ValidPoint is_valid_garbage_position(Capsule *capsule, Point point);
+Point point_offset(Point point, u8 x_or_y, s8 offset);
 
 UNK_TYPE func_800601F0(struct_game_state_data *gameStateDataRef, s32 arg1);
 void func_80060270(struct_game_state_data * gameStateDataRef, UNK_TYPE arg1);

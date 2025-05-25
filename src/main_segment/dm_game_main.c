@@ -3420,7 +3420,43 @@ s32 dm_game_main_cnt(struct_game_state_data *gameStateDataRef, GameMapCell *mapC
             }
 
             if (var_s6) {
+
+                // Figure out which player we are modifying
+                u8 player_index = get_player_index(gameStateDataRef); // for debugging purposes
+
                 dm_set_capsel(gameStateDataRef);
+
+                // If this is player 1, randomly decide whether to add garbage 
+                // to their upcoming capsule (for debugging purposes)
+                if (player_index == 0) {
+                    u8 num_of_garbage = 0;
+
+                    // Randomly decide whether or not to add garbage. If 
+                    // garbage_chance resolves to 0, add 1 garbage piece. If it 
+                    // resolves to 1, add 2 garbage pieces.
+                    u8 garbage_seed = random(0xFFFF);
+                    u8 garbage_chance = garbage_seed % 6;
+                    if (garbage_chance == 0) {
+                        num_of_garbage = 1;
+                    }
+                    else if (garbage_chance == 1) {
+                        num_of_garbage = 2;
+                    }
+
+                    // If we are adding garbage, generate and add garbage to capsule
+                    if (num_of_garbage) {
+                        u8 i;
+                        u8 garbage_colors[num_of_garbage];
+
+                        for (i = 0; i < num_of_garbage; i++) {
+                            garbage_colors[i] = random(0xFFFF) % 3;
+                        }
+
+                        add_garbage_to_capsule(&gameStateDataRef->preview_capsule, 
+                                               garbage_colors, num_of_garbage);
+                    }
+                }
+
                 dm_capsel_speed_up(gameStateDataRef);
                 if (gameStateDataRef->unk_03B < gameStateDataRef->unk_03A) {
                     gameStateDataRef->unk_03B = gameStateDataRef->unk_03A;
@@ -3654,6 +3690,144 @@ s32 dm_game_main_cnt(struct_game_state_data *gameStateDataRef, GameMapCell *mapC
     }
 
     return 0;
+}
+
+u8 get_player_index(struct_game_state_data *current_game_state) {
+    return current_game_state - game_state_data;
+}
+
+void add_garbage_to_capsule(Capsule *capsule, u8 garbage_colors[], u8 num_of_garbage) {
+    u8 i;
+    
+    // Add each garbage piece individually
+    for (i = 0; i < num_of_garbage; i++) {
+        u8 garbage_index = i + 2;
+        u8 piece_color = garbage_colors[i];
+        Point new_point = new_piece(capsule);
+
+        capsule->x[garbage_index] = new_point.x;
+        capsule->y[garbage_index] = new_point.y;
+        capsule->sprite_index[garbage_index] = 4; // single unattached block texture
+        capsule->palette_index[garbage_index] = piece_color;
+
+        capsule->piece_count++;
+    }
+}
+
+// Returns a valid point for a new garbage piece (must be in bounding box and 
+// attached to existing piece)
+Point new_piece(Capsule *capsule) {
+    Point new_point;
+    ValidPoint checked_point;
+
+    // Pick a random part of the capsule to add piece to
+    u8 random_index = random(0xFFFF) % capsule->piece_count;
+    Point index_point;
+
+    // Pick whether to add piece in x or y direction of the piece we're adding it to
+    u8 x_or_y = random(2);
+
+    // Get coordinates of point to add piece to
+    index_point.x = capsule->x[random_index];
+    index_point.y = capsule->y[random_index];
+
+    // See if a valid point was found in that direction
+    checked_point = new_piece2(capsule, index_point, x_or_y);
+
+    // If a valid point wasn't found, try the other coordinate direction
+    if (!(checked_point.is_valid)) {
+
+        // Get new point with other direction
+        x_or_y = (x_or_y == 0) ? 1 : 0;
+        checked_point = new_piece2(capsule, index_point, x_or_y);
+
+        // If the new point still isn't valid, recursively try to find an index 
+        // that does have a valid point next to it
+        if (!(checked_point.is_valid)) {
+            return new_piece(capsule);
+        }
+    }
+
+    // Otherwise, if the point was valid, return it
+    new_point.x = checked_point.x;
+    new_point.y = checked_point.y;
+    return new_point;
+    
+}
+
+// Creates new point in given direction (with an offset of 1) or indicates 
+// failure to find a valid spot with ValidPoint.valid = false
+ValidPoint new_piece2(Capsule *capsule, Point index_point, u8 x_or_y) {
+     Point updated_point;
+     ValidPoint checked_point;
+
+    // Pick random offset to add to chosen direction
+    s8 offset = random(2) ? 1 : -1;
+
+    // Get potential coordinates of new piece
+    updated_point = point_offset(index_point, x_or_y, offset);
+    
+    // Check if updated point is valid
+    checked_point = is_valid_garbage_position(capsule, updated_point);
+
+    // If point isn't in bounding box, try the reverse offset
+    if (!checked_point.is_valid) {
+
+        // Get new point with reversed offset
+        offset = (offset == -1) ? 1 : -1;
+        updated_point = point_offset(index_point, x_or_y, offset);
+
+        // If updated point isn't valid, continue to return checked_point to indicate failure
+        checked_point = is_valid_garbage_position(capsule, updated_point);
+    }
+
+    return checked_point;
+}
+
+ValidPoint is_valid_garbage_position(Capsule *capsule, Point point) {
+    u8 i;
+    s8 x = point.x;
+    s8 y = point.y;
+
+    ValidPoint new_point;
+    new_point.x = x;
+    new_point.y = y;
+
+    // Make sure that coordinate is in 4*2 bounding box: (2, -1) to (5, 0)
+    if (!(x >= 2 && x <= 5 && y >= -1 && y <= 0)) {
+        new_point.is_valid = false;
+        return new_point;
+    }
+    
+    // Loop over each established piece to make sure it doesn't overwrite it
+    for (i = 0; i < capsule->piece_count; i++) {
+        if (x == capsule->x[i] && y == capsule->y[i]) {
+            new_point.is_valid = false;
+            return new_point;
+        }
+    }
+
+    new_point.is_valid = true;
+    return new_point;
+}
+
+// Return new updated coordinate with respective direction and offset
+Point point_offset(Point point, u8 x_or_y, s8 offset) {
+    Point new_point;
+    new_point.x = point.x;
+    new_point.y = point.y;
+
+    // Update x coordinate
+    if (x_or_y == 0) {
+        new_point.x += offset;
+    }
+
+    // Update y coordinate
+    else if (x_or_y == 1) {
+        new_point.y += offset;
+    }
+
+    return new_point;
 }
 
 void dm_set_pause_on(struct_game_state_data *gameStateData, s32 arg1) {
