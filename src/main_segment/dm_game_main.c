@@ -577,7 +577,8 @@ void rotate_capsel(GameMapCell *mapCells, Capsule *arg1, s32 arg2) {
 
         dm_snd_play_in_game(SND_INDEX_67);
 
-        for (i = 0; i < arg1->piece_count; i++) {
+        // Only update sprites for base capsule (first 2 pieces)
+        for (i = 0; i < 2; i++) {
             temp = rotate_table_474[arg1->sprite_index[i]];
             temp += var_s1;
             arg1->sprite_index[i] = rotate_mtx_475[temp];
@@ -1241,7 +1242,7 @@ void dm_calc_erase_score_pos(struct_game_state_data *arg0, GameMapCell *mapCells
     }
 }
 
-bool dm_calc_capsel_pos(struct_game_state_data *gameStateDataRef, s32 arg1[2], s32 arg2[2]) {
+bool dm_calc_capsel_pos(struct_game_state_data *gameStateDataRef, s32 arg1[], s32 arg2[]) {
     Capsule *temp_s1 = &gameStateDataRef->current_capsule;
     s32 var_t0;
     s32 what = 0x24;
@@ -1307,12 +1308,12 @@ bool dm_calc_capsel_pos(struct_game_state_data *gameStateDataRef, s32 arg1[2], s
                 (u32)b + var_s2 - (u16)(u32)var_fa0 + 1 + gameStateDataRef->unk_00A * (temp_s1->y[var_t0] + 1);
         }
     } else if (temp_s1->y[0] <= 0) {
-        for (var_t0 = 0; var_t0 < 2; var_t0++) {
+        for (var_t0 = 0; var_t0 < temp_s1->piece_count; var_t0++) {
             arg1[var_t0] = gameStateDataRef->unk_006 + gameStateDataRef->unk_00A * temp_s1->x[var_t0];
             arg2[var_t0] = gameStateDataRef->unk_008 + gameStateDataRef->unk_00A * temp_s1->y[var_t0] - 0xA;
         }
     } else {
-        for (var_t0 = 0; var_t0 < 2; var_t0++) {
+        for (var_t0 = 0; var_t0 < temp_s1->piece_count; var_t0++) {
             arg1[var_t0] = gameStateDataRef->unk_006 + gameStateDataRef->unk_00A * temp_s1->x[var_t0];
             arg2[var_t0] = gameStateDataRef->unk_008 + gameStateDataRef->unk_00A * temp_s1->y[var_t0] + 1;
         }
@@ -1339,7 +1340,7 @@ void dm_draw_capsel_by_gfx(struct_game_state_data *gameStateData, s32 *arg1, s32
 
     load_TexBlock_4b(temp_v0->texs[1], temp_v0->info[0], temp_v0->info[1]);
 
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i < temp_s1->piece_count; i++) {
         load_TexPal(dm_game_get_capsel_pal(var_s3, temp_s1->palette_index[i])->texs[0]);
         draw_Tex(arg1[i], arg2[i], gameStateData->unk_00A, gameStateData->unk_00A, 0,
                  temp_s1->sprite_index[i] * gameStateData->unk_00A);
@@ -1353,7 +1354,7 @@ void dm_draw_capsel_by_gfx(struct_game_state_data *gameStateData, s32 *arg1, s32
  *
  * Does this by drawing directly to the framebuffer instead of using the gfx microcode.
  */
-void dm_draw_capsel_by_cpu_tentative(struct_game_state_data *gameStateDataRef, s32 arg1[2], s32 arg2[2]) {
+void dm_draw_capsel_by_cpu_tentative(struct_game_state_data *gameStateDataRef, s32 arg1[], s32 arg2[]) {
     Capsule *temp_s6 = &gameStateDataRef->current_capsule;
     TiTexData *tex_data;
     s32 var_s1;
@@ -1365,7 +1366,7 @@ void dm_draw_capsel_by_cpu_tentative(struct_game_state_data *gameStateDataRef, s
         var_s5 = 1;
     }
 
-    for (var_s1 = 0; var_s1 < 2; var_s1++) {
+    for (var_s1 = 0; var_s1 < temp_s6->piece_count; var_s1++) {
         u8 *ci4_texture;
         u16 *fb;
         u16 *tlut;
@@ -5937,8 +5938,9 @@ void dm_game_graphic_common(struct_game_state_data *gameStateData, s32 arg1, Gam
 
 void dm_game_graphic_p(struct_game_state_data *gameStateData, s32 arg1, GameMapCell *mapCells) {
     struct_watchGame *watchGameP = watchGame;
-    s32 sp20[2];
-    s32 sp28[2];
+    u8 capsule_piece_count = gameStateData->current_capsule.piece_count;
+    s32 sp20[capsule_piece_count];
+    s32 sp28[capsule_piece_count];
     s32 temp_s6;
     s32 i;
 
@@ -6384,8 +6386,12 @@ void dm_make_key(void) {
 
 void key_control_main(struct_game_state_data *gameStateDataRef, GameMapCell *mapCells, s32 arg2, s32 arg3) {
     struct_watchGame *temp_s5 = watchGame;
-    s32 sp18[2];
-    s32 sp20[2];
+
+    // Known error: ghost preview doesn't work for garbage pieces (likely because
+    // the single-block texture doesn't have a ghost texture equivalent)
+    u8 capsule_piece_count = gameStateDataRef->current_capsule.piece_count;
+    s32 sp18[capsule_piece_count];
+    s32 sp20[capsule_piece_count];
 
     func_80063FF4();
 
