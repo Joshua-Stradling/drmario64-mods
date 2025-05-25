@@ -47,15 +47,19 @@ typedef struct Capsule {
     /* 0x4 */ s8 sprite_index[max_capsule_size]; /* Original name: casel_g */
     /* 0x6 */ s8 palette_index[max_capsule_size]; /* Original name: capsel_p */
     /* 0x8 */ s8 display_flag;
-    /* 0x9 */ s8 falling_flg;
+    /* 0x9 */ s8 falling_flag;
     /* 0xA */ s8 capsel_flg_2;
     /* 0xB */ s8 piece_count;
 } Capsule; // size = 0xC
 
 typedef struct Point {
-    int x;
-    int y;
+    s8 x, y;
 } Point;
+
+typedef struct ValidPoint {
+    s8 x, y;
+    bool is_valid;
+} ValidPoint;
 
 typedef struct struct_game_state_data_cap_attack_work {
     /* 0x0 */ u16 unk_0;
@@ -260,6 +264,14 @@ typedef struct struct_game_state_data {
     /* 0x29C */ struct_game_state_data_blk blk[GAME_MAP_ROWS+1][GAME_MAP_COLUMNS]; /* Original name: blk */
     /* 0x3BC */ struct_game_state_data_cap cap; /* Original name: cap */
 } struct_game_state_data; // size = 0x3C4
+
+// Functions added for mod
+u8 get_player_index(struct_game_state_data *current_game_state);
+void add_garbage_to_capsule(Capsule *capsule, u8 garbage_colors[], u8 num_of_garbage);
+Point new_piece(Capsule *capsule);
+ValidPoint new_piece2(Capsule *capsule, Point index_point, u8 x_or_y);
+ValidPoint is_valid_garbage_position(Capsule *capsule, Point point);
+Point point_offset(Point point, u8 x_or_y, s8 offset);
 
 u32 dm_make_score(struct_game_state_data *state);
 void dm_attack_se(struct_game_state_data *state, s32 player_no);
