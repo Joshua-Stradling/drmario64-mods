@@ -760,7 +760,7 @@ void rotate_capsel(GameMapCell *map, Capsule *cap, s32 move_vec) {
 
         dm_snd_play_in_game(SND_INDEX_67);
 
-        for (i = 0; i < cap->piece_count; i++) {
+        for (i = 0; i < 2; i++) {
             save = rotate_table_474[cap->sprite_index[i]];
             save += vec;
             cap->sprite_index[i] = rotate_mtx_475[save];
@@ -1575,12 +1575,12 @@ bool dm_calc_capsel_pos(struct_game_state_data *state, s32 xx[2], s32 yy[2]) {
             yy[var_t0] = (u32)b + var_s2 - (u16)(u32)var_fa0 + 1 + state->map_item_size * (n_cap->pos_y[var_t0] + 1);
         }
     } else if (n_cap->pos_y[0] <= 0) {
-        for (var_t0 = 0; var_t0 < 2; var_t0++) {
+        for (var_t0 = 0; var_t0 < n_cap->piece_count; var_t0++) {
             xx[var_t0] = state->map_x + state->map_item_size * n_cap->pos_x[var_t0];
             yy[var_t0] = state->map_y + state->map_item_size * n_cap->pos_y[var_t0] - 0xA;
         }
     } else {
-        for (var_t0 = 0; var_t0 < 2; var_t0++) {
+        for (var_t0 = 0; var_t0 < n_cap->piece_count; var_t0++) {
             xx[var_t0] = state->map_x + state->map_item_size * n_cap->pos_x[var_t0];
             yy[var_t0] = state->map_y + state->map_item_size * n_cap->pos_y[var_t0] + 1;
         }
@@ -1611,7 +1611,7 @@ void dm_draw_capsel_by_gfx(struct_game_state_data *state, s32 *xx, s32 *yy) {
 
     load_TexBlock_4b(tex->texs[TI_TEX_TEX], tex->info[TI_INFO_IDX_WIDTH], tex->info[TI_INFO_IDX_HEIGHT]);
 
-    for (i = 0; i < 2; i++) {
+    for (i = 0; i < cap->piece_count; i++) {
         pal = dm_game_get_capsel_pal(type, cap->palette_index[i]);
         load_TexPal(pal->texs[TI_TEX_TLUT]);
         draw_Tex(xx[i], yy[i], state->map_item_size, state->map_item_size, 0, cap->sprite_index[i] * state->map_item_size);
@@ -1637,7 +1637,7 @@ void dm_draw_capsel_by_cpu_tentative(struct_game_state_data *state, s32 xx[2], s
         var_s5 = 1;
     }
 
-    for (var_s1 = 0; var_s1 < 2; var_s1++) {
+    for (var_s1 = 0; var_s1 < cap->piece_count; var_s1++) {
         u8 *ci4_texture;
         u16 *fb;
         u16 *tlut;
@@ -6601,8 +6601,9 @@ void dm_game_graphic_common(struct_game_state_data *state, s32 player_no, GameMa
  */
 void dm_game_graphic_p(struct_game_state_data *state, s32 player_no, GameMapCell *map) {
     struct_watchGame *st = watchGame;
-    s32 xx[2];
-    s32 yy[2];
+    u8 capsule_piece_count = state->now_cap.piece_count;
+    s32 xx[capsule_piece_count];
+    s32 yy[capsule_piece_count];
     s32 size_flg;
     s32 i;
 
@@ -7059,8 +7060,12 @@ void dm_make_key(void) {
  */
 void key_control_main(struct_game_state_data *state, GameMapCell *map, s32 player_no, s32 joy_no) {
     struct_watchGame *st = watchGame;
-    s32 xx[2];
-    s32 yy[2];
+
+    // Known error: ghost preview doesn't work for garbage pieces (likely because
+    // the single-block texture doesn't have a ghost texture equivalent)
+    u8 capsule_piece_count = state->now_cap.piece_count;
+    s32 xx[capsule_piece_count];
+    s32 yy[capsule_piece_count];
 
     load_visible_fall_point_flag();
 
