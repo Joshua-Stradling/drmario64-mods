@@ -55,12 +55,21 @@ void clear_map_all(GameMapCell *mapCells) {
     }
 }
 
-/**
- * Original name: get_map_info
- */
 s32 get_map_info(const GameMapCell *mapCells, s32 column, s32 row) {
-    s32 index = GAME_MAP_GET_INDEX(row - 1, column);
+    s32 index;
 
+    // If column asked for is not in map, say that the position is filled
+    if (column < 0 || column >= GAME_MAP_COLUMNS) {
+        return 1;
+    }
+
+    // If the row asked for is above the height of the map, say that the 
+    // position is clear
+    if (row < 1) {
+        return 0;
+    }
+
+    index = GAME_MAP_GET_INDEX(row - 1, column);
     if (mapCells[index].capsel_m_flg[0] != 0) {
         return 1;
     }
