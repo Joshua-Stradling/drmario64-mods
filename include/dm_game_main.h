@@ -364,7 +364,7 @@ typedef struct struct_gameBackup {
 
 // Functions added for mod
 u8 get_player_index(struct_game_state_data *current_game_state);
-void add_garbage_to_capsule(Capsule *capsule, u8 garbage_colors[], u8 num_of_garbage);
+void add_garbage_to_capsule(Capsule *capsule, s8 garbage_colors[], u8 num_of_garbage);
 Point new_piece(Capsule *capsule);
 ValidPoint new_piece2(Capsule *capsule, Point index_point, u8 x_or_y);
 ValidPoint is_valid_garbage_position(Capsule *capsule, Point point);

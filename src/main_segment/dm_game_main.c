@@ -3432,25 +3432,22 @@ s32 dm_game_main_cnt(struct_game_state_data *gameStateDataRef, GameMapCell *mapC
                 if (player_index == 0) {
                     u8 num_of_garbage = 0;
 
-                    // Randomly decide whether or not to add garbage. If 
-                    // garbage_chance resolves to 0, add 1 garbage piece. If it 
-                    // resolves to 1, add 2 garbage pieces.
-                    u8 garbage_seed = random(0xFFFF);
-                    u8 garbage_chance = garbage_seed % 6;
-                    if (garbage_chance == 0) {
+                    // Randomly decide whether or not to add garbage
+                    u8 garbage_chance = random(3);
+                    if (garbage_chance == 1) {
                         num_of_garbage = 1;
                     }
-                    else if (garbage_chance == 1) {
+                    else if (garbage_chance == 2) {
                         num_of_garbage = 2;
                     }
 
                     // If we are adding garbage, generate and add garbage to capsule
                     if (num_of_garbage) {
                         u8 i;
-                        u8 garbage_colors[num_of_garbage];
+                        s8 garbage_colors[num_of_garbage];
 
                         for (i = 0; i < num_of_garbage; i++) {
-                            garbage_colors[i] = random(0xFFFF) % 3;
+                            garbage_colors[i] = random(3);
                         }
 
                         add_garbage_to_capsule(&gameStateDataRef->preview_capsule, 
@@ -3697,13 +3694,13 @@ u8 get_player_index(struct_game_state_data *current_game_state) {
     return current_game_state - game_state_data;
 }
 
-void add_garbage_to_capsule(Capsule *capsule, u8 garbage_colors[], u8 num_of_garbage) {
+void add_garbage_to_capsule(Capsule *capsule, s8 garbage_colors[], u8 num_of_garbage) {
     u8 i;
     
     // Add each garbage piece individually
     for (i = 0; i < num_of_garbage; i++) {
         u8 garbage_index = i + 2;
-        u8 piece_color = garbage_colors[i];
+        s8 piece_color = garbage_colors[i];
         Point new_point = new_piece(capsule);
 
         capsule->x[garbage_index] = new_point.x;
@@ -8066,6 +8063,9 @@ void dm_game_graphic2(void) {
                     draw_virus_number(&gGfxHead, game_state_data[i].unk_025, _posP2VirusNum[i][0], _posP2VirusNum[i][1],
                                       1.0f, 1.0f);
                 }
+
+                // -- Debug print tools for 2 player --
+                // draw_count_number(&gGfxHead, 0, *how many numbers*, *number to display*, *x*, *y*);
 
                 switch (evs_gamemode) {
                     case ENUM_EVS_GAMEMODE_3:

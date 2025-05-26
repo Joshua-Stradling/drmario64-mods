@@ -49,7 +49,20 @@ void clear_map_all(GameMapCell *mapCells) {
 }
 
 s32 get_map_info(GameMapCell *mapCells, s32 column, s32 rowPlusOne) {
-    s32 index = GAME_MAP_GET_INDEX(rowPlusOne - 1, column);
+    s32 index;
+
+    // If column asked for is not in map, say that the position is filled
+    if (column < 0 || column >= GAME_MAP_COLUMNS) {
+        return 1;
+    }
+
+    // If the row asked for is above the height of the map, say that the 
+    // position is clear
+    if (rowPlusOne < 1) {
+        return 0;
+    }
+
+    index = GAME_MAP_GET_INDEX(rowPlusOne - 1, column);
 
     if (mapCells[index].unk_4[0] != 0) {
         return 1;
