@@ -464,58 +464,65 @@ void throw_rotate_capsel(Capsule *arg0) {
     }
 }
 
-void translate_capsel(GameMapCell *mapCells, struct_game_state_data *arg1, s32 arg2, s32 arg3) {
-    s32 var_s1 = 0;
-    Capsule *temp_s5 = &arg1->current_capsule;
+// Capsule location shouldn't be modified if it isn't being displayed or hasn't dropped
+bool capsule_playable(Capsule *capsule) {
+    int i;
 
-    if ((temp_s5->y[0] <= 0) || (temp_s5->display_flag == 0)) {
-        return;
+    if (capsule->display_flag == 0) {
+        return false;
     }
-
-    if (arg2 == 1) {
-        if (temp_s5->x[0] == temp_s5->x[1]) {
-            if ((temp_s5->x[1] < 7) && (get_map_info(mapCells, temp_s5->x[1] + 1, temp_s5->y[0]) != arg2)) {
-                if (temp_s5->y[1] == 0) {
-                    var_s1 = 1;
-                } else if (get_map_info(mapCells, temp_s5->x[0] + 1, temp_s5->y[1]) != arg2) {
-                    var_s1 = 1;
-                }
-            }
-        } else if (temp_s5->x[1] < 7) {
-            if (get_map_info(mapCells, temp_s5->x[1] + 1, temp_s5->y[0]) != arg2) {
-                var_s1 = 1;
-            }
+    for (i = 0; i < capsule->piece_count; i++) {
+        if (capsule->y[i] > 0) {
+            return true;
         }
-    } else if (arg2 == -1) {
-        if (temp_s5->x[0] == temp_s5->x[1]) {
-            if ((temp_s5->x[0] > 0) && (get_map_info(mapCells, temp_s5->x[0] - 1, temp_s5->y[0]) != 1)) {
-                if (temp_s5->y[1] == 0) {
-                    var_s1 = -1;
-                } else if (get_map_info(mapCells, temp_s5->x[0] - 1, temp_s5->y[1]) != 1) {
-                    var_s1 = -1;
-                }
-            }
-        } else if (temp_s5->x[0] > 0) {
-            if (get_map_info(mapCells, temp_s5->x[0] - 1, temp_s5->y[0]) != 1) {
-                var_s1 = -1;
+    }
+    return false;
+}
+
+void translate_capsel(GameMapCell *mapCells, struct_game_state_data *arg1, s32 shift_offset, s32 arg3) {
+    Capsule *capsule = &arg1->current_capsule;
+    int i;
+    bool shift_clear = true;
+
+    if (!capsule_playable(capsule)) return;
+
+    // Check that each piece can shift to the right
+    if (shift_offset == 1) {
+        for (i = 0; i < capsule->piece_count; i++) {
+            if (get_map_info(mapCells, capsule->x[i] + 1, capsule->y[i]) == 1) {
+                shift_clear = false;
+                break;
             }
         }
     }
+    
+    // Check that each piece can shift to the left
+    else if (shift_offset == -1) {
+        for (i = 0; i < capsule->piece_count; i++) {
+            if (get_map_info(mapCells, capsule->x[i] - 1, capsule->y[i]) == 1) {
+                shift_clear = false;
+                break;
+            }
+        }
+    }
 
-    if (var_s1 != 0) {
+    if (shift_clear) {
         dm_snd_play_in_game(SND_INDEX_65);
         arg1->unk_034 = 0;
-        temp_s5->x[0] += var_s1;
-        temp_s5->x[1] += var_s1;
-    } else {
+
+        for (i = 0; i < capsule->piece_count; i++) {
+            capsule->x[i] += shift_offset;
+        }
+    }
+    else {
         if (arg1->unk_034 == 0) {
             arg1->unk_034 = 1;
             dm_snd_play_in_game(SND_INDEX_65);
         }
 
-        if (arg2 == 1) {
+        if (shift_offset == 1) {
             joyCursorFastSet(0x100, arg3);
-        } else if (arg2 == -1) {
+        } else if (shift_offset == -1) {
             joyCursorFastSet(0x200, arg3);
         }
     }
