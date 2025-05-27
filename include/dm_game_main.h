@@ -265,7 +265,14 @@ typedef struct struct_game_state_data {
     /* 0x3BC */ struct_game_state_data_cap cap; /* Original name: cap */
 } struct_game_state_data; // size = 0x3C4
 
+void rotate_capsel_temp(GameMapCell *map, Capsule *cap, s32 move_vec);
+
 // Functions added for mod
+Point rotated_coords(Capsule *capsule, int capsule_index, bool vertical_to_horizontal, s32 rotation_direction, int pivot_rotated, int rotate_base_coord);
+bool safe_to_rotate(GameMapCell *mapCells, Capsule *capsule, bool vertical_to_horizontal, s32 rotation_direction, int pivot_rotated, int rotate_base_coord);
+void set_rotate_capsule(Capsule *capsule, bool vertical_to_horizontal, s32 rotation_direction, int pivot_rotated, int rotate_base_coord);
+void switch_capsule_colors(Capsule *capsule);
+
 u8 get_player_index(struct_game_state_data *current_game_state);
 void add_garbage_to_capsule(Capsule *capsule, s8 garbage_colors[], u8 num_of_garbage);
 Point new_piece(Capsule *capsule);
@@ -281,7 +288,7 @@ void go_down(struct_game_state_data *state, GameMapCell *map, s32 cout);
 void erase_anime(GameMapCell *map);
 
 void translate_capsel(GameMapCell *map, struct_game_state_data *state, s32 move_vec, s32 joy_no);
-void rotate_capsel(GameMapCell *map, Capsule *cap, s32 move_vec);
+void rotate_capsel(GameMapCell *mapCells, Capsule *capsule, s32 rotation_direction);
 
 void dm_set_capsel(struct_game_state_data *state);
 void dm_capsel_speed_up(struct_game_state_data *state);
