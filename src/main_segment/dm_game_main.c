@@ -2553,9 +2553,9 @@ void dm_capsel_down(struct_game_state_data *gameStateData, GameMapCell *mapCells
             set_map(mapCells, capsule->x[i], capsule->y[i], capsule->sprite_index[i],
                 capsule->palette_index[i] + black_color_1384[gameStateData->unk_049]);
             
-            // If this is a garbage piece, mark that it is unstable, so 
-            // that it will fall when go_down() is called
-            if (i > 1) {
+            // If this is a garbage piece (and there isn't a block below it), mark 
+            // that it is unstable, so that it will fall when go_down() is called
+            if (i > 1 && get_map_info(mapCells, capsule->x[i], capsule->y[i] + 1) == 0) {
                 s32 index = GAME_MAP_GET_INDEX(capsule->y[i] - 1, capsule->x[i]);
                 mapCells[index].unk_4[1] = 1;
             }
@@ -3765,11 +3765,13 @@ s32 dm_game_main_cnt(struct_game_state_data *gameStateDataRef, GameMapCell *mapC
         case GAMESTATEDATA_UNK_00C_2:
             return 3;
 
+        // After capsule has fallen, check if anything needs to be cleared
         case GAMESTATEDATA_UNK_00C_5:
             if (dm_check_game_over(gameStateDataRef, mapCells)) {
                 return -1;
             }
 
+            // Redirect if there is a match to be cleared
             if (dm_h_erase_chack(mapCells) || dm_w_erase_chack(mapCells)) {
                 if (gameStateDataRef->unk_049 == 0) {
                     gameStateDataRef->unk_00C = GAMESTATEDATA_UNK_00C_6;
@@ -3778,9 +3780,27 @@ s32 dm_game_main_cnt(struct_game_state_data *gameStateDataRef, GameMapCell *mapC
                 }
 
                 gameStateDataRef->unk_02F = 0;
-            } else if (gameStateDataRef->unk_049 == 0) {
-                gameStateDataRef->unk_00C = GAMESTATEDATA_UNK_00C_9;
-            } else {
+            }
+
+            // If there is not match to clear, and this is normal mode 
+            // (not retirement practice), continue
+            else if (gameStateDataRef->unk_049 == 0) {
+
+                // If this last capsule had garbage pieces attached to 
+                // it, make sure that those pieces fall independently 
+                // after landing
+                if (gameStateDataRef->current_capsule.piece_count > 2) {
+                    gameStateDataRef->unk_00C = GAMESTATEDATA_UNK_00C_8;
+                }
+
+                // Otherwise, continue to setup next capsule
+                else {
+                    gameStateDataRef->unk_00C = GAMESTATEDATA_UNK_00C_9;
+                }
+            }
+            // Otherwise, if there is not match to clear, and this is 
+            // retirement practice, continue to setup next capsule
+            else {
                 gameStateDataRef->unk_00C = GAMESTATEDATA_UNK_00C_16;
             }
             break;
