@@ -158,19 +158,19 @@ typedef struct struct_game_state_data_unk_140 {
     /* 0x04 */ UNK_TYPE1 unk_04[0x20];
 } struct_game_state_data_unk_140; // size = 0x24
 
-#define max_capsule_size 4
+#define MAX_CAPSULE_SIZE 4
 
 // First 2 indexes are a connected domino, any additional are garbage 
 // that will fall independently after the capsule lands.
 typedef struct Capsule {
-    /* 0x0 */ s8 x[max_capsule_size];
-    /* 0x4 */ s8 y[max_capsule_size];
-    /* 0x8 */ s8 sprite_index[max_capsule_size]; // texture
-    /* 0xC */ s8 palette_index[max_capsule_size]; // color
+    /* 0x0 */ s8 x[MAX_CAPSULE_SIZE];
+    /* 0x4 */ s8 y[MAX_CAPSULE_SIZE];
+    /* 0x8 */ s8 sprite_index[MAX_CAPSULE_SIZE]; // texture
+    /* 0xC */ s8 palette_index[MAX_CAPSULE_SIZE]; // color
     /* 0x10 */ s8 display_flag;
     /* 0x11 */ s8 falling_flag;
     /* 0x12 */ s8 unk_12;
-    /* 0x13 */ s8 piece_count;
+    /* 0x13 */ u8 piece_count; // 2 for standard, 3–4 with garbage
 } Capsule; // size updated from 0xB to 0x14
 
 typedef struct Point {
@@ -181,6 +181,15 @@ typedef struct ValidPoint {
     s8 x, y;
     bool is_valid;
 } ValidPoint;
+
+#define NUM_OF_STICKY_SLOTS 16
+#define MAX_STICKY_GARBAGE (MAX_CAPSULE_SIZE - 2)
+
+typedef struct StickyGarbageSlot {
+    /* 0x0 */ u8 garbage_colors[MAX_STICKY_GARBAGE]; // 1–3, each representing a pill color
+    /* 0x2 */ u8 sender_index; // Who sent this garbage
+    /* 0x3 */ u8 garbage_count; // 1–2 (0 means slot is unused)
+} StickyGarbageSlot; // size = 0x4
 
 typedef struct struct_game_state_data_unk_050 {
     /* 0x0 */ u16 unk_0;
@@ -351,16 +360,17 @@ typedef struct struct_game_state_data {
     /* 0x3D2 */ u8 unk_3C0;
     /* 0x3D3 */ u8 unk_3C1;
     /* 0x3D4 */ UNK_TYPE1 unk_3C2[0x2];
-} struct_game_state_data; // updated size = 0x3C4 + ((0x14 - 0xB) * 2) = 0x3D6
+    /* 0x3D6 */ StickyGarbageSlot sticky_garbage_queue[NUM_OF_STICKY_SLOTS];
+} struct_game_state_data; // updated size = 0x3C4 + ((0x14 - 0xB) * 2) + (0x4 * 16) = 0x416
 
 // GameStateBackup?
 typedef struct struct_gameBackup {
     /* 0x0000 */ struct_watchGame unk_0000;
     /* 0x0B60 */ struct_game_state_data unk_0B60[4];
-    /* 0x1AB8 */ GameMapCell unk_1A70[4][GAME_MAP_ROWS * GAME_MAP_COLUMNS];
-    /* 0x2FF8 */ s32 highScore;
-    /* 0x2FFC */ s32 gameTime;
-} struct_gameBackup; // updated size = 0x2FB8 + ((0x3D6 - 0x3C4) * 4) = 0x3000
+    /* 0x1BB8 */ GameMapCell unk_1A70[4][GAME_MAP_ROWS * GAME_MAP_COLUMNS];
+    /* 0x30F8 */ s32 highScore;
+    /* 0x30FC */ s32 gameTime;
+} struct_gameBackup; // updated size = 0x2FB8 + ((0x416 - 0x3C4) * 4) = 0x3100
 
 void rotate_capsel_temp(GameMapCell *mapCells, Capsule *arg1, s32 arg2);
 
