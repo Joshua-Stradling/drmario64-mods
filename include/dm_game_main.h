@@ -277,6 +277,7 @@ typedef struct struct_game_state_data {
     /* 0x3D6 */ StickyGarbageSlot sticky_garbage_queue[NUM_OF_STICKY_SLOTS];
 } struct_game_state_data; // size = 0x3C4
 
+// Original rotate_capsel() function (keep for AI players until wall kicks are added to updated rotate_capsel())
 void rotate_capsel_temp(GameMapCell *map, Capsule *cap, s32 move_vec);
 
 // Functions added for mod
@@ -284,7 +285,10 @@ Point rotated_coords(Capsule *capsule, int capsule_index, bool vertical_to_horiz
 bool safe_to_rotate(GameMapCell *mapCells, Capsule *capsule, bool vertical_to_horizontal, s32 rotation_direction, int pivot_rotated, int rotate_base_coord);
 void set_rotate_capsule(Capsule *capsule, bool vertical_to_horizontal, s32 rotation_direction, int pivot_rotated, int rotate_base_coord);
 void switch_capsule_colors(Capsule *capsule);
-
+// bool set_sticky_attack_4p(struct_game_state_data *attacker);
+void attack_stock_update(struct_game_state_data *attacker, s32 colors[3], s32 teammate_bitmask);
+s32 pop_from_stock(struct_game_state_data *attacker, s32 garbage_count, u8 garbage_limit);
+void add_random_colors(struct_game_state_data *attacker, s32 colors[3], s32 garbage_count);
 u8 get_player_index(struct_game_state_data *current_game_state);
 void add_garbage_to_capsule(Capsule *capsule, s8 garbage_colors[], u8 num_of_garbage);
 Point new_piece(Capsule *capsule);

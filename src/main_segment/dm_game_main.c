@@ -2971,6 +2971,286 @@ s32 dm_make_attack_pattern(u32 max) {
 }
 
 /**
+ * Original name: attack_table_1531
+ */
+const char attack_table_1531[][3] = {
+    { 3, 2, 1 },
+    { 0, 3, 2 },
+    { 1, 0, 3 },
+    { 2, 1, 0 },
+};
+static_assert(ARRAY_COUNT(attack_table_1531) == MAX_PLAYERS, "");
+
+// bool set_sticky_attack_4p(struct_game_state_data *attacker) {
+//     u8 i;
+//     u8 j;
+//     s32 garbage_count;
+
+//     // Game struct of player receiving garbage
+//     struct_game_state_data *receiver;
+
+//     // Which teammates(s) did the attacker select?
+//     u8 teammate_bitmask = 0;
+
+//     // Which opponent(s) did the attacker select?
+//     u8 opponent_bitmask = 0;
+
+//     // Colors chosen to represent from combos cleared
+//     s32 colors[3];
+//     s32 colors_copy[3];
+    
+//     // Return if there wasn't at least a 2-line combo
+//     if (attacker->chain_line < 2U) return false;
+
+//     // Loop over three different colors
+//     for (i = 0; i < 3; i++) {
+
+//         // Go to next color if this one didn't initiate the combo
+//         if (!((attacker->chain_color[3] >> i) & 1)) continue;
+
+//         // Get the player's gamestate that corresponds to the color cleared
+//         receiver = &game_state_data[attack_table_1531[attacker->player_no][i]];
+
+//         // Skip if the receiving player is retired
+//         if (receiver->flg_retire) continue;
+
+//         // Record if the receiving player is the attacker's teammate
+//         if (receiver->team_no == attacker->team_no) {
+            
+//             // Calculate bitmask of teammates we selected
+//             teammate_bitmask |= 1 << attack_table_1531[attacker->player_no][i];
+//         }
+
+//         // Otherwise, add the receiving player to the opponents' bitmask
+//         else {
+//             opponent_bitmask |= 1 << attack_table_1531[attacker->player_no][i];
+//         }
+//     }
+
+//     // If there are no active players to send garbage to, return that 
+//     // the attack was unsuccessful
+//     if (!(teammate_bitmask || opponent_bitmask)) return false;
+
+//     // How many pieces of sticky garbage to send
+//     garbage_count = MIN(MAX_STICKY_GARBAGE, attacker->chain_line - 1);
+
+//     // Update garbage with stock (without exceeding limit)
+//     garbage_count = pop_from_stock(attacker, garbage_count, MAX_STICKY_GARBAGE);
+
+//     // Randomly select which colors cleared will be represented in 
+//     // garbage (updates colors array)
+//     add_random_colors(attacker, colors, garbage_count);
+
+//     // Continue to send garbage to opponent(s)
+//     if (opponent_bitmask) {
+
+//         // Loop over all players, and add garbage to opponents we selected
+//         for (i = 0; i < 4; i++) {
+
+//             // Which slot to add garbage to
+//             StickyGarbageSlot *slot = 0;
+
+//             // Skip players not marked for attack (or if they aren't 
+//             // opponents but teammates)
+//             if (!((opponent_bitmask >> i) & 1)) {
+//                 continue;
+//             }
+
+//             // Get target player's struct
+//             receiver = &game_state_data[i];
+
+//             // Play attack animation
+//             add_attack_effect(attacker->player_no, 
+//                             _posP4CharBase[attacker->player_no][0],
+//                             _posP4CharBase[attacker->player_no][1], 
+//                             _posP4CharBase[receiver->player_no][0],
+//                             _posP4CharBase[receiver->player_no][1]
+//             );
+
+//             // Calculate which slot to add garbage to (either adding to 
+//             // one previously queued by attacker, or starting new slot)
+//             for (j = 0; j < NUM_OF_STICKY_SLOTS; j++) {
+//                 StickyGarbageSlot *current_slot = &receiver->sticky_garbage_queue[j];
+                
+//                 // If slot is occupied, check to see if we can still add 
+//                 // more garbage to it
+//                 if (current_slot->garbage_count != 0) {
+
+//                     // Only add garbage to slot if the current attacker 
+//                     // was the one who set it, and if it wouldn't exceed 
+//                     // the garbage limit
+//                     if ((current_slot->sender_index == attacker->player_no) &&
+//                         (current_slot->garbage_count + garbage_count <= MAX_STICKY_GARBAGE)
+//                     ) {
+//                         slot = current_slot;
+//                         break;
+//                     }
+//                 }
+
+//                 // If the spot is empty, use it
+//                 else {
+                    
+//                     // Update the slot to record that it is being set by 
+//                     // this attacker
+//                     current_slot->sender_index = attacker->player_no;
+                    
+//                     slot = current_slot;
+//                     break;
+//                 }
+//             }
+
+//             // If an availabe slot could not be found, return that the 
+//             // attack failed
+//             if (slot == 0) return false;
+
+//             // Create copy of colors (so we can randomly pull each one off)
+//             for (j = 0; j < ARRAY_COUNTU(colors_copy); j++) {
+//                 colors_copy[j] = colors[j];
+//             }
+
+//             // Add each new garbage piece to the slot
+//             for (; slot->garbage_count < MAX_STICKY_GARBAGE; slot->garbage_count++) {
+                
+//                 // Add a random color to this column (loop until found 
+//                 // one that's available)
+//                 while ((colors_copy[0] + colors_copy[1] + colors_copy[2]) > 0) {
+//                     u8 color = random(3);
+//                     if (colors_copy[color] > 0) {
+//                         colors_copy[color]--;
+//                         slot->garbage_colors[slot->garbage_count] = color;
+//                         break;
+//                     }
+//                 }
+//             }
+
+
+//         }
+//     }
+
+//     attack_stock_update(attacker, colors, teammate_bitmask);
+
+//     return true;
+// }
+
+void attack_stock_update(struct_game_state_data *attacker, s32 colors[3], s32 teammate_bitmask) {
+    s32 colors_copy[3];
+    u8 write_index = 0;
+    u8 i;
+    u8 j;
+    u8 color;
+
+    // Compact teammate stock so that empty values are always on right
+    for (i = 0; i < 4; i++) {
+
+        // If this index is empty, move to the next one (but keep write 
+        // index where it is)
+        if (watchGame->story_4p_stock_cap[attacker->team_no][i] == -1) {
+            continue;
+        }
+
+        // Shift all indexes to where they should be
+        watchGame->story_4p_stock_cap[attacker->team_no][write_index] = watchGame->story_4p_stock_cap[attacker->team_no][i];
+        write_index += 1;
+    }
+
+    // Fill all remaining indexes with -1
+    for (; write_index < 4; write_index++) {
+        watchGame->story_4p_stock_cap[attacker->team_no][write_index] = -1;
+    }
+
+    // Loop over all players to add garbage colors to stock for each 
+    // teammate we targetted
+    for (i = 0; i < 4; i++) {
+
+        // Skip if the player selected wasn't a teammate that we targetted
+        if (!((teammate_bitmask >> i) & 1)) {
+            continue;
+        }
+
+        // Create a local copy of the garbage colors available
+        for (j = 0; j < ARRAY_COUNTU(colors_copy); j++) {
+            colors_copy[j] = colors[j];
+        }
+
+        // Loop over stock to update it
+        for (j = 0; j < 4; j++) {
+
+            // If this index of stock is already filled, skip it
+            if (watchGame->story_4p_stock_cap[attacker->team_no][j] != -1) {
+                continue;
+            }
+
+            // Set the first available color (priority red, yellow, 
+            // then blue) to the stock index
+            for (color = 0; color < 3; color++) {
+                if (colors_copy[color] > 0) {
+                    colors_copy[color]--;
+                    watchGame->story_4p_stock_cap[attacker->team_no][j] = color;
+                    break;
+                }
+            }
+        }
+    }
+}
+
+// If more garbage could be sent, pop any available from stock (returns 
+// updated garbage count)
+s32 pop_from_stock(struct_game_state_data *attacker, s32 garbage_count, u8 garbage_limit) {
+    u8 i;
+    for (i = 0; i < ARRAY_COUNTU(watchGame->story_4p_stock_cap[attacker->team_no]); i++) {
+        s8 stock_color = watchGame->story_4p_stock_cap[attacker->team_no][i];
+
+        // Break if limit has been reached or stock is empty
+        if (garbage_count >= garbage_limit || stock_color == -1) {
+            break;
+        }
+
+        // Add color to garbage pool
+        attacker->chain_color[stock_color] += 1;
+
+        // Mark slot as empty
+        watchGame->story_4p_stock_cap[attacker->team_no][i] = -1;
+
+        garbage_count++;
+    }
+    return garbage_count;
+}
+
+// Randomly select which colors cleared will be represented in garbage 
+// (because if there were more combos cleared than can be represented, 
+// say 5 colors were cleared but there is a garbage limit of 4, randomly 
+// pick which 4 of those will be sent). Sets colors array parameter.
+void add_random_colors(struct_game_state_data *attacker, s32 colors[3], s32 garbage_count) {
+    u8 color;
+    u8 i;
+
+    // Initializes colors array values to 0
+    for (i = 0; i < 3; i++) {
+        colors[i] = 0;
+    }
+
+    // Updates colors array with randomly selected colors from combos cleared
+    for (i = 0; i < garbage_count;) {
+
+        // If there are no more colors available to pick from, end the loop
+        if ((attacker->chain_color[0] + attacker->chain_color[1] + attacker->chain_color[2]) <= 0) {
+            break;
+        }
+
+        // Pick a random color
+        color = random(3);
+
+        // If that color is available, pop it off of the 
+        // color-combos cleared and add it to garbage colors sent
+        if (attacker->chain_color[color] != 0) {
+            attacker->chain_color[color]--;
+            colors[color]++;
+            i++;
+        }
+    }
+}
+
+/**
  * Original name: dm_set_attack_2p
  */
 s32 dm_set_attack_2p(struct_game_state_data *state) {
@@ -3090,21 +3370,9 @@ s32 dm_set_attack_2p(struct_game_state_data *state) {
 }
 
 /**
- * Original name: attack_table_1531
- */
-const char attack_table_1531[][3] = {
-    { 3, 2, 1 },
-    { 0, 3, 2 },
-    { 1, 0, 3 },
-    { 2, 1, 0 },
-};
-static_assert(ARRAY_COUNT(attack_table_1531) == MAX_PLAYERS, "");
-
-/**
  * Original name: dm_set_attack_4p
  */
 s32 dm_set_attack_4p(struct_game_state_data *state) {
-    struct_watchGame *st = watchGame;
     struct_game_state_data *enemy;
 #define WORK_LEN 3U
 
@@ -3137,10 +3405,6 @@ s32 dm_set_attack_4p(struct_game_state_data *state) {
     // Return if there wasn't at least a 2-line combo
     if (state->chain_line < 2) {
         return 0;
-    }
-
-    for (i = 0; i < ARRAY_COUNTU(attackWork); i++) {
-        attackWork[i] = 0;
     }
 
     chainCount = 0;   // total number of garbage to send
@@ -3193,49 +3457,11 @@ s32 dm_set_attack_4p(struct_game_state_data *state) {
         chainCount = MIN(4, state->chain_line);
 
         // If more garbage could be sent, pop any available from stock
-        for (j = 0; j < ARRAY_COUNTU(st->story_4p_stock_cap[state->team_no]); j++) {
-            
-            // Break if the limit of 4 garbage has been reached
-            if (chainCount >= 4) {
-                break;
-            }
-
-            // Continue if the stock isn't empty
-            if (st->story_4p_stock_cap[state->team_no][j] != -1) {
-                
-                // Add color to garbage pool
-                state->chain_color[st->story_4p_stock_cap[state->team_no][j]]++;
-
-                // Mark slot as empty
-                st->story_4p_stock_cap[state->team_no][j] = -1;
-
-                // Update garbage count
-                chainCount++;
-            }
-        }
+        chainCount = pop_from_stock(state, chainCount, 4);
 
         // Randomly select which colors cleared will be represented in 
-        // garbage (because if there were more combos cleared than can 
-        // be represented, say 5 colors were cleared but only 4 can be 
-        // sent, randomly pick which 4 of those will be sent)
-        for (j = 0; j < chainCount;) {
-
-            // If there are no more colors available to pick from, end the loop
-            if ((state->chain_color[0] + state->chain_color[1] + state->chain_color[2]) <= 0) {
-                break;
-            }
-
-            // Pick a random color
-            temp_v0_3 = random(WORK_LEN);
-
-            // If that color is available, pop it off of the 
-            // color-combos cleared and add it to garbage colors sent
-            if (state->chain_color[temp_v0_3] != 0) {
-                state->chain_color[temp_v0_3]--;
-                attackWork[temp_v0_3]++;
-                j++;
-            }
-        }
+        // garbage (updates sp30)
+        add_random_colors(state, attackWork, chainCount);
     }
 
     // If there are no players that we can send garbage to (or if they 
@@ -3309,55 +3535,7 @@ s32 dm_set_attack_4p(struct_game_state_data *state) {
         }
     }
 
-    j = 0;
-
-    // Compact teammate stock so that empty values are always on right
-    for (i = 0; i < ARRAY_COUNT(st->story_4p_stock_cap[state->team_no]); i++) {
-        if (st->story_4p_stock_cap[state->team_no][i] == -1) {
-            continue;
-        }
-
-        st->story_4p_stock_cap[state->team_no][j] = st->story_4p_stock_cap[state->team_no][i];
-        j += 1;
-    }
-
-    for (; j < ARRAY_COUNT(st->story_4p_stock_cap[state->team_no]); j++) {
-        st->story_4p_stock_cap[state->team_no][j] = -1;
-    }
-
-    // Loop over all players (to add garbage colors sent to teammates to stock)
-    for (i = 0; i < 4; i++) {
-
-        // Skip if the player selected wasn't a teammate that we targetted
-        if (!((stockFlag >> i) & 1)) {
-            continue;
-        }
-
-        // Create a local copy of the garbage colors available
-        for (j = 0; j < WORK_LEN; j++) {
-            work[j] = attackWork[j];
-        }
-
-        // Loop over stock to update it
-        temp_v0_3 = 0;
-        for (j = 0; j < ARRAY_COUNT(st->story_4p_stock_cap[state->team_no]); j++) {
-
-            // If this index of stock is already filled, skip it
-            if (st->story_4p_stock_cap[state->team_no][j] != -1) {
-                continue;
-            }
-
-            // Set the first available color (priority red, yellow, 
-            // then blue) to the stock index
-            for (; temp_v0_3 < ARRAY_COUNT(work); temp_v0_3++) {
-                if (work[temp_v0_3] > 0) {
-                    work[temp_v0_3]--;
-                    st->story_4p_stock_cap[state->team_no][j] = temp_v0_3;
-                    break;
-                }
-            }
-        }
-    }
+    attack_stock_update(state, attackWork, stockFlag);
 
     // Return that the attack was successful
     return 1;
