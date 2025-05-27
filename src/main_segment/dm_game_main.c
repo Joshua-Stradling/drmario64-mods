@@ -2943,9 +2943,9 @@ void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
             set_map(map, capsule->pos_x[i], capsule->pos_y[i], capsule->sprite_index[i],
                 capsule->palette_index[i] + black_color_1384[state->flg_game_over]);
             
-            // If this is a garbage piece, mark that it is unstable, so 
-            // that it will fall when go_down() is called
-            if (i > 1) {
+            // If this is a garbage piece (and there isn't a block below it), mark 
+            // that it is unstable, so that it will fall when go_down() is called
+            if (i > 1 && get_map_info(map, capsule->pos_x[i], capsule->pos_y[i] + 1) == 0) {
                 s32 index = GAME_MAP_GET_INDEX(capsule->pos_y[i] - 1, capsule->pos_x[i]);
                 map[index].capsel_m_flg[1] = 1;
             }
@@ -4245,11 +4245,13 @@ DmMainCnt dm_game_main_cnt(struct_game_state_data *state, GameMapCell *map, s32 
         case dm_mode_wait:
             return dm_ret_virus_wait;
 
+        // After capsule has fallen, check if anything needs to be cleared
         case dm_mode_down_wait:
             if (dm_check_game_over(state, map)) {
                 return dm_ret_game_over;
             }
 
+            // Redirect if there is a match to be cleared
             if (dm_h_erase_chack(map) || dm_w_erase_chack(map)) {
                 if (!state->flg_game_over) {
                     state->mode_now = dm_mode_erase_chack;
@@ -4258,9 +4260,27 @@ DmMainCnt dm_game_main_cnt(struct_game_state_data *state, GameMapCell *map, s32 
                 }
 
                 state->cap_speed_count = 0;
-            } else if (!state->flg_game_over) {
-                state->mode_now = dm_mode_cap_set;
-            } else {
+            }
+
+            // If there is not match to clear, and this is normal mode 
+            // (not retirement practice), continue
+            else if (!state->flg_game_over) {
+
+                // If this last capsule had garbage pieces attached to 
+                // it, make sure that those pieces fall independently 
+                // after landing
+                if (state->now_cap.piece_count > 2) {
+                    state->mode_now = dm_mode_ball_down;
+                }
+
+                // Otherwise, continue to setup next capsule
+                else {
+                    state->mode_now = dm_mode_cap_set;
+                }
+            }
+            // Otherwise, if there is not match to clear, and this is 
+            // retirement practice, continue to setup next capsule
+            else {
                 state->mode_now = dm_mode_tr_cap_set;
             }
             break;
