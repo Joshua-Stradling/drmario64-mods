@@ -69,6 +69,11 @@ s32 get_map_info(const GameMapCell *mapCells, s32 column, s32 row) {
         return 0;
     }
 
+    // If the row asked for is at or below the floor, say that the position is filled
+    if (row > 16) {
+        return 1;
+    }
+
     index = GAME_MAP_GET_INDEX(row - 1, column);
     if (mapCells[index].capsel_m_flg[0] != 0) {
         return 1;

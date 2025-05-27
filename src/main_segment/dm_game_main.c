@@ -58,6 +58,7 @@ typedef struct struct_gameGeom {
     /* 0x1800 */ Vtx vtxBuf[3][0x80];
 } struct_gameGeom; // size = 0x3000
 
+// Debugging variables
 int vertToHorz = 66;
 int baseCoord = 66;
 int largestCoord = 66;
@@ -2987,39 +2988,85 @@ s32 dm_set_attack_2p(struct_game_state_data *state) {
     int c; // r1+0x8
 #endif
 
+    // Return if there wasn't at least a 2-line combo
     if (state->chain_line < 2) {
         return 0;
     }
 
+    // Get the opponents game struct
     enemy = &game_state_data[state->player_no ^ 1];
-
+    
+    // Calculate how many garbage pieces to drop
     var_a0 = MIN(4, state->chain_line);
 
+    // Loop over our 1 opponent
     for (i = 0; i < 1; i++) {
+
+        // If there is existing garbage queued for opponent, add garbage 
+        // in same-parity groups (if existing garbage is in even columns, 
+        // add in even columns that aren't filled)
         if (enemy->cap_attack_work[i].unk_0 != 0) {
             pattern = 0;
+
+            // Iterate over each column
             for (var_s0 = 0; var_s0 < 8; var_s0++) {
-                if (enemy->cap_attack_work[i].unk_0 & (3 << (var_s0 << 1))) {
+                
+                // Shift column by a bit, effectively doubling it (and 
+                // enabling 8 column numbers to be used on a 16-bit 
+                // bitfield with each column having 2 bits)
+                int double_column = var_s0 << 1;
+
+                // Create a mask that is moved over to match the 
+                // appropriate column in the bitfield (3 == 0b11)
+                int mask = 3 << double_column;
+
+                // Check if there is garbage that matches the 
+                // appropriate column of the bitmask
+                if (enemy->cap_attack_work[i].unk_0 & mask) {
+
+                    // Create 8-bit bitmask of the columns that already 
+                    // have garbage in them
                     pattern |= 1 << var_s0;
+
+                    // Determine whether the columns with garbage in 
+                    // them are odd or even
                     var_t1 = var_s0 & 1;
                 }
             }
 
+            // In each column of the same-parity group, set to 1 if no 
+            // garbage is occupying it (available), otherwise, set it 
+            // to 0 (unavailable)
             for (var_s0 = 0; var_s0 < 8; var_s0++) {
+
+                // Continue if the column has the same parity (even or 
+                // odd) to the columns that already have garbage in them
                 if ((var_s0 & 1) == var_t1) {
+
+                    // If the column has garbage in it, set it to 0 
+                    // (unavailable). Otherwise, set it to 1 (available)
                     pattern ^= 1 << var_s0;
                 }
             }
 
+            // If there are no more available columns in the same-parity 
+            // group, don't add more rain, but return that rain was 
+            // successful (just couldn't be added because it was maxed out)
             if (pattern == 0) {
                 continue;
             }
-        } else {
+        }
+        
+        // If there isn't existing garbage, calculate random 
+        // evenly-spaced columns to put new garbage in
+        else {
             pattern = dm_make_attack_pattern(var_a0);
         }
 
+        // Mark who set garbage
         enemy->cap_attack_work[i].unk_2 = state->player_no;
 
+        // Set new garbage in bitfield (put colors in random available columns)
         for (var_s0 = 0; var_s0 < 8; var_s0++) {
             if (!((pattern >> var_s0) & 1)) {
                 continue;
@@ -3038,6 +3085,7 @@ s32 dm_set_attack_2p(struct_game_state_data *state) {
         break;
     }
 
+    // Return that attack was successful
     return 1;
 }
 
@@ -3059,12 +3107,23 @@ s32 dm_set_attack_4p(struct_game_state_data *state) {
     struct_watchGame *st = watchGame;
     struct_game_state_data *enemy;
 #define WORK_LEN 3U
+
+    // Local copy of array of garbage colors
     s32 work[WORK_LEN];
+
+    // Array of garbage colors (how many of each will be sent)
     s32 attackWork[WORK_LEN];
+
+    // Which opponent(s) did the attacker select?
     s32 attackFlag;
+
+    // Which teammate(s) did the attacker select?
     s32 stockFlag;
     s32 temp_v0_3;
+
+    // Attack pattern 8-bit bitmask
     s32 var_a1_2;
+
     s32 chainCount;
     s32 var_s1_2;
     s32 j;
@@ -3075,6 +3134,7 @@ s32 dm_set_attack_4p(struct_game_state_data *state) {
     int x; // r18
 #endif
 
+    // Return if there wasn't at least a 2-line combo
     if (state->chain_line < 2) {
         return 0;
     }
@@ -3083,51 +3143,93 @@ s32 dm_set_attack_4p(struct_game_state_data *state) {
         attackWork[i] = 0;
     }
 
-    chainCount = 0;
+    chainCount = 0;   // total number of garbage to send
 
-    stockFlag = 0;
-    attackFlag = 0;
+    stockFlag = 0;    // bitmask of teammates to store garbage for
+    attackFlag = 0;   // bitmask of enemies to attack
+
+    // Loop over three different colors
     for (i = 0; i < ARRAY_COUNT(attack_table_1531[0]); i++) {
+
+        // Go to next color if this one didn't initiate the combo
         if (!((state->chain_color[3] >> i) & 1)) {
             continue;
         }
 
+        // Get the player's gamestate that corresponds to the color cleared
         enemy = &game_state_data[attack_table_1531[state->player_no][i]];
+        
+        // Continue if the player is our teammate
         if (enemy->team_no == state->team_no) {
+
+            // Skip if this player is retired
             if (enemy->flg_retire) {
                 continue;
             }
+
+            // Calculate bitmask of teammates we selected
             stockFlag |= 1 << attack_table_1531[state->player_no][i];
-        } else {
+        }
+        
+        // Otherwise, continue if this is our opponent
+        else {
+
+            // Skip if this player is retired (and if they aren't in the 
+            // debug training mode)
             if (enemy->flg_retire && ((enemy->cnd_training != dm_cnd_training) || !enemy->flg_training)) {
                 continue;
             }
+
+            // Calculate bitmask of opponents we selected
             attackFlag |= 1 << attack_table_1531[state->player_no][i];
         }
 
+        // If we've already prepared the garbage, don't prepare it again
         if (chainCount > 0) {
             continue;
         }
 
+        // Get the total garbage count (based on size of combo cleared)
         chainCount = MIN(4, state->chain_line);
 
+        // If more garbage could be sent, pop any available from stock
         for (j = 0; j < ARRAY_COUNTU(st->story_4p_stock_cap[state->team_no]); j++) {
+            
+            // Break if the limit of 4 garbage has been reached
             if (chainCount >= 4) {
                 break;
             }
 
+            // Continue if the stock isn't empty
             if (st->story_4p_stock_cap[state->team_no][j] != -1) {
+                
+                // Add color to garbage pool
                 state->chain_color[st->story_4p_stock_cap[state->team_no][j]]++;
+
+                // Mark slot as empty
                 st->story_4p_stock_cap[state->team_no][j] = -1;
+
+                // Update garbage count
                 chainCount++;
             }
         }
 
+        // Randomly select which colors cleared will be represented in 
+        // garbage (because if there were more combos cleared than can 
+        // be represented, say 5 colors were cleared but only 4 can be 
+        // sent, randomly pick which 4 of those will be sent)
         for (j = 0; j < chainCount;) {
+
+            // If there are no more colors available to pick from, end the loop
             if ((state->chain_color[0] + state->chain_color[1] + state->chain_color[2]) <= 0) {
                 break;
             }
+
+            // Pick a random color
             temp_v0_3 = random(WORK_LEN);
+
+            // If that color is available, pop it off of the 
+            // color-combos cleared and add it to garbage colors sent
             if (state->chain_color[temp_v0_3] != 0) {
                 state->chain_color[temp_v0_3]--;
                 attackWork[temp_v0_3]++;
@@ -3136,40 +3238,68 @@ s32 dm_set_attack_4p(struct_game_state_data *state) {
         }
     }
 
+    // If there are no players that we can send garbage to (or if they 
+    // retired), return
     if ((attackFlag + stockFlag) == 0) {
         return 0;
     }
 
+    // Loop over all players, and add garbage to opponents we selected
     for (i = 0; i < ARRAY_COUNT(game_state_data); i++) {
+
+        // Skip players not marked for attack (or if they aren't 
+        // opponents but teammates)
         if (!((attackFlag >> i) & 1)) {
             continue;
         }
 
+        // Get target player's struct
         enemy = &game_state_data[i];
 
+        // Play attack animation
         add_attack_effect(state->player_no, _posP4CharBase[state->player_no][0], _posP4CharBase[state->player_no][1],
                           _posP4CharBase[enemy->player_no][0], _posP4CharBase[enemy->player_no][1]);
 
+        // Copy garbage color counts to a local copy
         for (j = 0; j < ARRAY_COUNTU(work); j++) {
             work[j] = attackWork[j];
         }
 
+        // Add garbage to the first available slot (out of 16, so 
+        // multiple attacks can be queued on one person)
         for (j = 0; j < ARRAY_COUNT(enemy->cap_attack_work); j++) {
+
+            // If this slot is filled, go to the next one
             if (enemy->cap_attack_work[j].unk_0 != 0) {
                 continue;
             }
 
+            // Get random attack pattern 8-bit bitmask (for each column)
             var_a1_2 = dm_make_attack_pattern(chainCount);
 
+            // Mark which player sent the garbage in receiving player's slot
             enemy->cap_attack_work[j].unk_2 = state->player_no;
+
+            // Loop over each column to potentially add garbage
             for (var_s1_2 = 0; var_s1_2 < 8; var_s1_2++) {
+
+                // If this column isn't selected in the bitmask, skip it
                 if (!((var_a1_2 >> var_s1_2) & 1)) {
                     continue;
                 }
 
+                // Add a random color to this column (loop until found 
+                // one that's available)
                 while ((work[0] + work[1] + work[2]) > 0) {
+                    
+                    // Get random color
                     temp_v0_3 = random(3);
+
+                    // Continue if that color is available
                     if (work[temp_v0_3] > 0) {
+
+                        // Update garbage colors array and the 
+                        // opponent's slot bitmask
                         work[temp_v0_3]--;
                         enemy->cap_attack_work[j].unk_0 |= (temp_v0_3 + 1) << (var_s1_2 * 2);
                         break;
@@ -3181,6 +3311,7 @@ s32 dm_set_attack_4p(struct_game_state_data *state) {
 
     j = 0;
 
+    // Compact teammate stock so that empty values are always on right
     for (i = 0; i < ARRAY_COUNT(st->story_4p_stock_cap[state->team_no]); i++) {
         if (st->story_4p_stock_cap[state->team_no][i] == -1) {
             continue;
@@ -3194,21 +3325,30 @@ s32 dm_set_attack_4p(struct_game_state_data *state) {
         st->story_4p_stock_cap[state->team_no][j] = -1;
     }
 
+    // Loop over all players (to add garbage colors sent to teammates to stock)
     for (i = 0; i < 4; i++) {
+
+        // Skip if the player selected wasn't a teammate that we targetted
         if (!((stockFlag >> i) & 1)) {
             continue;
         }
 
+        // Create a local copy of the garbage colors available
         for (j = 0; j < WORK_LEN; j++) {
             work[j] = attackWork[j];
         }
 
+        // Loop over stock to update it
         temp_v0_3 = 0;
         for (j = 0; j < ARRAY_COUNT(st->story_4p_stock_cap[state->team_no]); j++) {
+
+            // If this index of stock is already filled, skip it
             if (st->story_4p_stock_cap[state->team_no][j] != -1) {
                 continue;
             }
 
+            // Set the first available color (priority red, yellow, 
+            // then blue) to the stock index
             for (; temp_v0_3 < ARRAY_COUNT(work); temp_v0_3++) {
                 if (work[temp_v0_3] > 0) {
                     work[temp_v0_3]--;
@@ -3219,6 +3359,7 @@ s32 dm_set_attack_4p(struct_game_state_data *state) {
         }
     }
 
+    // Return that the attack was successful
     return 1;
 #undef WORK_LEN
 }
@@ -4443,38 +4584,38 @@ DmMainCnt dm_game_main_cnt(struct_game_state_data *state, GameMapCell *map, s32 
 
             if (var_s6) {
 
-                // Figure out which player we are modifying
-                u8 player_index = get_player_index(state); // for debugging purposes
+                // // Figure out which player we are modifying
+                // u8 player_index = get_player_index(state); // for debugging purposes
 
                 dm_set_capsel(state);
 
-                // If this is player 1, randomly decide whether to add garbage 
-                // to their upcoming capsule (for debugging purposes)
-                if (player_index == 0) {
-                    u8 num_of_garbage = 0;
+                // // If this is player 1, randomly decide whether to add garbage 
+                // // to their upcoming capsule (for debugging purposes)
+                // if (player_index == 0) {
+                //     u8 num_of_garbage = 0;
 
-                    // Randomly decide whether or not to add garbage
-                    u8 garbage_chance = random(3);
-                    if (garbage_chance == 1) {
-                        num_of_garbage = 1;
-                    }
-                    else if (garbage_chance == 2) {
-                        num_of_garbage = 2;
-                    }
+                //     // Randomly decide whether or not to add garbage
+                //     u8 garbage_chance = random(3);
+                //     if (garbage_chance == 1) {
+                //         num_of_garbage = 1;
+                //     }
+                //     else if (garbage_chance == 2) {
+                //         num_of_garbage = 2;
+                //     }
 
-                    // If we are adding garbage, generate and add garbage to capsule
-                    if (num_of_garbage) {
-                        u8 i;
-                        s8 garbage_colors[num_of_garbage];
+                //     // If we are adding garbage, generate and add garbage to capsule
+                //     if (num_of_garbage) {
+                //         u8 i;
+                //         s8 garbage_colors[num_of_garbage];
 
-                        for (i = 0; i < num_of_garbage; i++) {
-                            garbage_colors[i] = random(3);
-                        }
+                //         for (i = 0; i < num_of_garbage; i++) {
+                //             garbage_colors[i] = random(3);
+                //         }
 
-                        add_garbage_to_capsule(&state->next_cap, 
-                                               garbage_colors, num_of_garbage);
-                    }
-                }
+                //         add_garbage_to_capsule(&state->next_cap, 
+                //                                garbage_colors, num_of_garbage);
+                //     }
+                // }
 
                 dm_capsel_speed_up(state);
                 if (state->chain_line_max < state->chain_line) {
@@ -7813,6 +7954,7 @@ void dm_game_init(bool reinit) {
     s32 k;
     struct_game_state_data *temp_s0_3;
     struct_game_state_data *var_s0_2;
+    StickyGarbageSlot empty_slot = {0};
 
     if (!reinit || !st->replayFlag) {
         st->replayFlag = 0;
@@ -8027,6 +8169,11 @@ void dm_game_init(bool reinit) {
         for (j = 0; j < ARRAY_COUNT(temp_s0_3->cap_attack_work); j++) {
             temp_s0_3->cap_attack_work[j].unk_0 = 0;
             temp_s0_3->cap_attack_work[j].unk_2 = 0;
+        }
+
+        // Clear sticky garbage queue (for modded garbage system)
+        for (j = 0; j < NUM_OF_STICKY_SLOTS; j++) {
+            temp_s0_3->sticky_garbage_queue[j] = empty_slot;
         }
 
         init_map_all(game_map_data[i]);
@@ -9253,7 +9400,8 @@ void dm_game_graphic2(void) {
                         push_any_key_draw(0x80, 0xC0);
                     }
                 } else {
-                    u8 y_count = 10;
+
+                    // u8 y_count = 10;
 
                     animeState_initDL(&game_state_data[0].anime, &gGfxHead);
                     animeState_draw(&game_state_data[0].anime, &gGfxHead, 250.0f, 84.0f, 1.0f, 1.0f);
@@ -9309,23 +9457,23 @@ void dm_game_graphic2(void) {
 
                     draw_virus_number(&gGfxHead, i, 0xFE, 0xD2, 1.0f, 1.0f);
 
-                    // -- Debug print tools for 1 player --
-                    draw_count_number(&gGfxHead, 0, 2, vertToHorz, 10, y_count);
-                    y_count += 15;
-                    draw_count_number(&gGfxHead, 0, 2, baseCoord, 10, y_count);
-                    y_count += 15;
-                    draw_count_number(&gGfxHead, 0, 2, largestCoord, 10, y_count);
-                    y_count += 15;
-                    draw_count_number(&gGfxHead, 0, 2, smallestCoord, 10, y_count);
-                    y_count += 15;
-                    draw_count_number(&gGfxHead, 0, 2, rotationDirection, 10, y_count);
-                    y_count += 15;
-                    draw_count_number(&gGfxHead, 0, 2, wallDistance, 10, y_count);
-                    y_count += 15;
-                    draw_count_number(&gGfxHead, 0, 2, offsetLen, 10, y_count);
-                    y_count += 15;
-                    draw_count_number(&gGfxHead, 0, 2, pivotRotated, 10, y_count);
-                    y_count += 15;
+                    // // -- Debug print tools for 1 player --
+                    // draw_count_number(&gGfxHead, 0, 2, vertToHorz, 10, y_count);
+                    // y_count += 15;
+                    // draw_count_number(&gGfxHead, 0, 2, baseCoord, 10, y_count);
+                    // y_count += 15;
+                    // draw_count_number(&gGfxHead, 0, 2, largestCoord, 10, y_count);
+                    // y_count += 15;
+                    // draw_count_number(&gGfxHead, 0, 2, smallestCoord, 10, y_count);
+                    // y_count += 15;
+                    // draw_count_number(&gGfxHead, 0, 2, rotationDirection, 10, y_count);
+                    // y_count += 15;
+                    // draw_count_number(&gGfxHead, 0, 2, wallDistance, 10, y_count);
+                    // y_count += 15;
+                    // draw_count_number(&gGfxHead, 0, 2, offsetLen, 10, y_count);
+                    // y_count += 15;
+                    // draw_count_number(&gGfxHead, 0, 2, pivotRotated, 10, y_count);
+                    // y_count += 15;
 
                     dm_draw_big_virus(&gGfxHead);
                     dm_game_graphic_effect(&game_state_data[0], 0, 0);
@@ -9340,7 +9488,7 @@ void dm_game_graphic2(void) {
         case GSL_VSCPU:
         case GSL_2DEMO:
             if (!debug_flag && !st->bg_snapping) {
-                u8 y_count = 10;
+                // u8 y_count = 10;
                 
                 disp_logo_setup(&gGfxHead);
 
@@ -9351,23 +9499,23 @@ void dm_game_graphic2(void) {
                                       _posP2VirusNum[i][1], 1.0f, 1.0f);
                 }
 
-                // -- Debug print tools for 2 player --
-                draw_count_number(&gGfxHead, 0, 2, vertToHorz, 10, y_count);
-                y_count += 15;
-                draw_count_number(&gGfxHead, 0, 2, baseCoord, 10, y_count);
-                y_count += 15;
-                draw_count_number(&gGfxHead, 0, 2, largestCoord, 10, y_count);
-                y_count += 15;
-                draw_count_number(&gGfxHead, 0, 2, smallestCoord, 10, y_count);
-                y_count += 15;
-                draw_count_number(&gGfxHead, 0, 2, rotationDirection, 10, y_count);
-                y_count += 15;
-                draw_count_number(&gGfxHead, 0, 2, wallDistance, 10, y_count);
-                y_count += 15;
-                draw_count_number(&gGfxHead, 0, 2, offsetLen, 10, y_count);
-                y_count += 15;
-                draw_count_number(&gGfxHead, 0, 2, pivotRotated, 10, y_count);
-                y_count += 15;
+                // // -- Debug print tools for 2 player --
+                // draw_count_number(&gGfxHead, 0, 2, vertToHorz, 10, y_count);
+                // y_count += 15;
+                // draw_count_number(&gGfxHead, 0, 2, baseCoord, 10, y_count);
+                // y_count += 15;
+                // draw_count_number(&gGfxHead, 0, 2, largestCoord, 10, y_count);
+                // y_count += 15;
+                // draw_count_number(&gGfxHead, 0, 2, smallestCoord, 10, y_count);
+                // y_count += 15;
+                // draw_count_number(&gGfxHead, 0, 2, rotationDirection, 10, y_count);
+                // y_count += 15;
+                // draw_count_number(&gGfxHead, 0, 2, wallDistance, 10, y_count);
+                // y_count += 15;
+                // draw_count_number(&gGfxHead, 0, 2, offsetLen, 10, y_count);
+                // y_count += 15;
+                // draw_count_number(&gGfxHead, 0, 2, pivotRotated, 10, y_count);
+                // y_count += 15;
 
                 switch (evs_gamemode) {
                     case GMD_TIME_ATTACK:
