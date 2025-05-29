@@ -65,6 +65,7 @@ typedef struct ValidPoint {
 
 #define NUM_OF_STICKY_SLOTS 16
 #define MAX_STICKY_GARBAGE (MAX_CAPSULE_SIZE - 2)
+#define MAX_REGULAR_GARBAGE 4
 
 typedef struct StickyGarbageSlot {
     /* 0x0 */ u8 garbage_colors[MAX_STICKY_GARBAGE]; // 1–3, each representing a pill color
@@ -285,8 +286,9 @@ Point rotated_coords(Capsule *capsule, int capsule_index, bool vertical_to_horiz
 bool safe_to_rotate(GameMapCell *mapCells, Capsule *capsule, bool vertical_to_horizontal, s32 rotation_direction, int pivot_rotated, int rotate_base_coord);
 void set_rotate_capsule(Capsule *capsule, bool vertical_to_horizontal, s32 rotation_direction, int pivot_rotated, int rotate_base_coord);
 void switch_capsule_colors(Capsule *capsule);
-// bool set_sticky_attack_4p(struct_game_state_data *attacker);
-void attack_stock_update(struct_game_state_data *attacker, s32 colors[3], s32 teammate_bitmask);
+s32 set_sticky_attack_4p(struct_game_state_data *attacker);
+bool is_player_ai(u8 player_index);
+void update_team_stock(struct_game_state_data *attacker, s32 teammate_bitmask);
 s32 pop_from_stock(struct_game_state_data *attacker, s32 garbage_count, u8 garbage_limit);
 void add_random_colors(struct_game_state_data *attacker, s32 colors[3], s32 garbage_count);
 u8 get_player_index(struct_game_state_data *current_game_state);
