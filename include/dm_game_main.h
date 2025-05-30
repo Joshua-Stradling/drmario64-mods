@@ -278,9 +278,6 @@ typedef struct struct_game_state_data {
     /* 0x3D6 */ StickyGarbageSlot sticky_garbage_queue[NUM_OF_STICKY_SLOTS];
 } struct_game_state_data; // size = 0x3C4
 
-// Original rotate_capsel() function (keep for AI players)
-void rotate_capsel_temp(GameMapCell *map, Capsule *cap, s32 move_vec);
-
 // Functions added for mod
 bool capsule_playable(Capsule *capsule);
 Point rotated_coords(Capsule *capsule, int capsule_index, bool vertical_to_horizontal, s32 rotation_direction, Point pivot_rotated);

@@ -58,16 +58,6 @@ typedef struct struct_gameGeom {
     /* 0x1800 */ Vtx vtxBuf[3][0x80];
 } struct_gameGeom; // size = 0x3000
 
-// Debugging variables
-int vertToHorz = 66;
-int baseCoord = 66;
-int largestCoord = 66;
-int smallestCoord = 66;
-int rotationDirection = 66;
-int wallDistance = 66;
-int offsetLen = 66;
-int pivotRotated = 66;
-
 /**
  * Original name: gameGeom
  */
@@ -949,11 +939,6 @@ void rotate_capsel(GameMapCell *mapCells, Capsule *capsule, s32 rotation_directi
     // always on bottom-left portion of the domino part of the capsule)
     if (vertical_to_horizontal) {
 
-        // Set to original y-coord of pivot piece (so that the non-pivot 
-        // base piece will rotate to the same level, and potential 
-        // garbage pieces will rotate accordingly)
-        pivot_rotated.y = capsule->pos_y[0];
-
         // Continue if rotating clockwise
         if (rotation_direction == 1) {
             
@@ -965,6 +950,18 @@ void rotate_capsel(GameMapCell *mapCells, Capsule *capsule, s32 rotation_directi
             if (x_to_wall == 0) {
                 offset.y = capsule->pos_y[0] - largest_y;
                 x_to_wall = check_left_wall(mapCells, capsule, offset.y);
+            }
+            
+            // If wall still hasn't been found, check bottom
+            if (x_to_wall == 0) {
+                offset.x = largest_x - capsule->pos_x[0];
+                y_to_wall = check_bottom(mapCells, capsule, offset.x);
+            }
+
+            // If wall still hasn't been found, check top
+            if (x_to_wall == 0 && y_to_wall == 0) {
+                offset.x = smallest_x - capsule->pos_x[0];
+                y_to_wall = check_top(mapCells, capsule, offset.x);
             }
         }
 
@@ -980,38 +977,48 @@ void rotate_capsel(GameMapCell *mapCells, Capsule *capsule, s32 rotation_directi
                 offset.y = smallest_y - capsule->pos_y[1];
                 x_to_wall = check_left_wall(mapCells, capsule, offset.y);
             }
+
+            // If wall still hasn't been found, check on bottom
+            if (x_to_wall == 0) {
+                offset.x = capsule->pos_x[0] - smallest_x;
+                y_to_wall = check_bottom(mapCells, capsule, offset.x);
+            }
+
+            // If wall still hasn't been found, check top
+            if (x_to_wall == 0 && y_to_wall == 0) {
+                offset.x = capsule->pos_x[0] - largest_x;
+                y_to_wall = check_top(mapCells, capsule, offset.x);
+            }
         }
 
         // If there's a wall on the right, calculate the pivot's rotated x-coord
         if (x_to_wall > 0) {
             pivot_rotated.x = capsule->pos_x[0] - (1 + (offset.y - x_to_wall));
+            pivot_rotated.y = capsule->pos_y[0];
         }
 
         // If there's a wall on the left, calculate the pivot's rotated x-coord
         else if (x_to_wall < 0) {
             pivot_rotated.x = capsule->pos_x[0] + (1 - (offset.y - x_to_wall));
+            pivot_rotated.y = capsule->pos_y[0];
+        }
+
+        // If there's a wall on the bottom, calculate the pivot's rotated coords
+        else if (y_to_wall > 0) {
+            pivot_rotated.x = capsule->pos_x[0];
+            pivot_rotated.y = capsule->pos_y[0] - (1 + (offset.x - y_to_wall));
+        }
+
+        // If there's a wall on the top, calculate the pivot's rotated y-coord
+        else if (y_to_wall < 0) {
+            pivot_rotated.x = capsule->pos_x[0];
+            pivot_rotated.y = capsule->pos_y[0] + (1 - (offset.x - y_to_wall));
         }
         
         // If a wall kick is not required, calculate the pivot's rotated x-coord
         else {
             pivot_rotated.x = capsule->pos_x[0];
-        }
-        
-        // Make rotation changes if it the area is clear
-        if (safe_to_rotate(mapCells, capsule, vertical_to_horizontal, rotation_direction, pivot_rotated)) {
-            set_rotate_capsule(capsule, vertical_to_horizontal, rotation_direction, pivot_rotated);
-            capsule_rotation = rotation_direction;
-        }
-
-        // Mark if it hasn't been rotated
-        else {
-            capsule_rotation = 0;
-        }
-
-        // If the capsule rotated counterclockwise, switch the colors 
-        // of indexes 0 and 1 for the rotation to be complete
-        if (capsule_rotation == -1) {
-            switch_capsule_colors(capsule);
+            pivot_rotated.y = capsule->pos_y[0];
         }
     }
 
@@ -1057,11 +1064,6 @@ void rotate_capsel(GameMapCell *mapCells, Capsule *capsule, s32 rotation_directi
         // needed), and complete rotation
         if (!do_swap_kick) {
 
-            // Set to original x-coord of pivot piece (so that the 
-            // non-pivot base piece will rotate to the same level, and 
-            // potential garbage pieces will rotate accordingly)
-            pivot_rotated.x = capsule->pos_x[0];
-
             // Continue if rotating counter-clockwise
             if (rotation_direction == -1) {
                 
@@ -1073,6 +1075,18 @@ void rotate_capsel(GameMapCell *mapCells, Capsule *capsule, s32 rotation_directi
                 if (y_to_wall == 0) {
                     offset.x = capsule->pos_x[0] - largest_x;
                     y_to_wall = check_top(mapCells, capsule, offset.x);
+                }
+
+                // If wall still hasn't been found, check on right
+                if (y_to_wall == 0) {
+                    offset.y = largest_y - capsule->pos_y[0];
+                    x_to_wall = check_right_wall(mapCells, capsule, offset.y);
+                }
+
+                // If wall still hasn't been found, check left
+                if (y_to_wall == 0 && x_to_wall == 0) {
+                    offset.y = smallest_y - capsule->pos_y[0];
+                    x_to_wall = check_left_wall(mapCells, capsule, offset.y);
                 }
             }
 
@@ -1088,60 +1102,74 @@ void rotate_capsel(GameMapCell *mapCells, Capsule *capsule, s32 rotation_directi
                     offset.x = smallest_x - capsule->pos_x[1];
                     y_to_wall = check_top(mapCells, capsule, offset.x);
                 }
+
+                // If wall still hasn't been found, check on right
+                if (y_to_wall == 0) {
+                    offset.y = capsule->pos_y[0] - smallest_y;
+                    x_to_wall = check_right_wall(mapCells, capsule, offset.y);
+                }
+
+                // If wall still hasn't been found, check left
+                if (y_to_wall == 0 && x_to_wall == 0) {
+                    offset.y = capsule->pos_y[0] - largest_y;
+                    x_to_wall = check_left_wall(mapCells, capsule, offset.y);
+                }
             }
             
             // If there's a wall on the bottom, calculate the pivot's rotated y-coord
             if (y_to_wall > 0) {
+                pivot_rotated.x = capsule->pos_x[0];
                 pivot_rotated.y = capsule->pos_y[0] - (1 + (offset.x - y_to_wall));
             }
 
             // If there's a wall on the top, calculate the pivot's rotated y-coord
             else if (y_to_wall < 0) {
+                pivot_rotated.x = capsule->pos_x[0];
                 pivot_rotated.y = capsule->pos_y[0] + (1 - (offset.x - y_to_wall));
+            }
+
+            // If there's a wall on the right, calculate the pivot's rotated x-coord
+            else if (x_to_wall > 0) {
+                pivot_rotated.x = capsule->pos_x[0] - (1 + (offset.y - x_to_wall));
+                pivot_rotated.y = capsule->pos_y[0];
+            }
+
+            // If there's a wall on the left, calculate the pivot's rotated x-coord
+            else if (x_to_wall < 0) {
+                pivot_rotated.x = capsule->pos_x[0] + (1 - (offset.y - x_to_wall));
+                pivot_rotated.y = capsule->pos_y[0];
             }
             
             // If a wall kick is not required, calculate the pivot's rotated y-coord
             else {
+                pivot_rotated.x = capsule->pos_x[0];
                 pivot_rotated.y = capsule->pos_y[0];
             }
         }
-        
-        // Make rotation changes if it the area is clear (if a swap kick is 
-        // planned, it should have already checked for rotation safety)
-        if (do_swap_kick || safe_to_rotate(mapCells, capsule, 
-            vertical_to_horizontal, rotation_direction, pivot_rotated)
-        ) {
-            set_rotate_capsule(capsule, vertical_to_horizontal, 
-                rotation_direction, pivot_rotated);
-            capsule_rotation = rotation_direction;
-        }
-
-        // Mark if it hasn't been rotated
-        else {
-            capsule_rotation = 0;
-        }
-
-        // If this was vert to horz, and the capsule rotated counterclockwise, 
-        // switch capsule colors for rotation to be complete
-        if (vertical_to_horizontal && capsule_rotation == -1) {
-            switch_capsule_colors(capsule); 
-        }
-
-        // If this was horz to vert, and the capsule rotated clockwise, switch 
-        // capsule colors for rotation to be complete
-        else if (!vertical_to_horizontal && capsule_rotation == 1) {
-            switch_capsule_colors(capsule);
-        }
     }
 
-    // vertToHorz = vertical_to_horizontal;
-    // baseCoord = rotate_base_coord;
-    // largestCoord = largest_coord;
-    // smallestCoord = smallest_coord;
-    // rotationDirection = rotation_direction;
-    // wallDistance = wall_distance;
-    // offsetLen = offset;
-    // pivotRotated = pivot_rotated;
+    // Make rotation changes if it the area is clear
+    if (safe_to_rotate(mapCells, capsule, vertical_to_horizontal, rotation_direction, pivot_rotated)) {
+        set_rotate_capsule(capsule, vertical_to_horizontal,  rotation_direction, pivot_rotated);
+        capsule_rotation = rotation_direction;
+    }
+
+    // Mark if it hasn't been rotated
+    else {
+        capsule_rotation = 0;
+    }
+
+    // If this was vert to horz, and the capsule rotated counterclockwise, 
+    // switch capsule colors for rotation to be complete
+    if (vertical_to_horizontal && capsule_rotation == -1) {
+        switch_capsule_colors(capsule); 
+    }
+
+    // If this was horz to vert, and the capsule rotated clockwise, switch 
+    // capsule colors for rotation to be complete
+    else if (!vertical_to_horizontal && capsule_rotation == 1) {
+        switch_capsule_colors(capsule);
+    }
 
     if (capsule_rotation) {
 
@@ -4670,40 +4698,7 @@ DmMainCnt dm_game_main_cnt(struct_game_state_data *state, GameMapCell *map, s32 
             }
 
             if (var_s6) {
-
-                // Figure out which player we are modifying
-                u8 player_index = get_player_index(state); // for debugging purposes
-
                 dm_set_capsel(state);
-
-                // If this is player 1, randomly decide whether to add garbage 
-                // to their upcoming capsule (for debugging purposes)
-                if (player_index == 0) {
-                    u8 num_of_garbage = 0;
-
-                    // Randomly decide whether or not to add garbage
-                    u8 garbage_chance = random(3);
-                    if (garbage_chance == 1) {
-                        num_of_garbage = 1;
-                    }
-                    else if (garbage_chance == 2) {
-                        num_of_garbage = 2;
-                    }
-
-                    // If we are adding garbage, generate and add garbage to capsule
-                    if (num_of_garbage) {
-                        u8 i;
-                        s8 garbage_colors[num_of_garbage];
-
-                        for (i = 0; i < num_of_garbage; i++) {
-                            garbage_colors[i] = random(3);
-                        }
-
-                        add_garbage_to_capsule(&state->next_cap, 
-                                               garbage_colors, num_of_garbage);
-                    }
-                }
-
                 dm_capsel_speed_up(state);
                 if (state->chain_line_max < state->chain_line) {
                     state->chain_line_max = state->chain_line;
@@ -9487,9 +9482,6 @@ void dm_game_graphic2(void) {
                         push_any_key_draw(0x80, 0xC0);
                     }
                 } else {
-
-                    // u8 y_count = 10;
-
                     animeState_initDL(&game_state_data[0].anime, &gGfxHead);
                     animeState_draw(&game_state_data[0].anime, &gGfxHead, 250.0f, 84.0f, 1.0f, 1.0f);
 
@@ -9543,25 +9535,6 @@ void dm_game_graphic2(void) {
                     }
 
                     draw_virus_number(&gGfxHead, i, 0xFE, 0xD2, 1.0f, 1.0f);
-
-                    // // -- Debug print tools for 1 player --
-                    // draw_count_number(&gGfxHead, 0, 2, vertToHorz, 10, y_count);
-                    // y_count += 15;
-                    // draw_count_number(&gGfxHead, 0, 2, baseCoord, 10, y_count);
-                    // y_count += 15;
-                    // draw_count_number(&gGfxHead, 0, 2, largestCoord, 10, y_count);
-                    // y_count += 15;
-                    // draw_count_number(&gGfxHead, 0, 2, smallestCoord, 10, y_count);
-                    // y_count += 15;
-                    // draw_count_number(&gGfxHead, 0, 2, rotationDirection, 10, y_count);
-                    // y_count += 15;
-                    // draw_count_number(&gGfxHead, 0, 2, wallDistance, 10, y_count);
-                    // y_count += 15;
-                    // draw_count_number(&gGfxHead, 0, 2, offsetLen, 10, y_count);
-                    // y_count += 15;
-                    // draw_count_number(&gGfxHead, 0, 2, pivotRotated, 10, y_count);
-                    // y_count += 15;
-
                     dm_draw_big_virus(&gGfxHead);
                     dm_game_graphic_effect(&game_state_data[0], 0, 0);
                     if (st->big_virus_stop_count != 0) {
@@ -9575,7 +9548,6 @@ void dm_game_graphic2(void) {
         case GSL_VSCPU:
         case GSL_2DEMO:
             if (!debug_flag && !st->bg_snapping) {
-                // u8 y_count = 10;
                 
                 disp_logo_setup(&gGfxHead);
 
@@ -9585,24 +9557,6 @@ void dm_game_graphic2(void) {
                     draw_virus_number(&gGfxHead, game_state_data[i].virus_number, _posP2VirusNum[i][0],
                                       _posP2VirusNum[i][1], 1.0f, 1.0f);
                 }
-
-                // // -- Debug print tools for 2 player --
-                // draw_count_number(&gGfxHead, 0, 2, vertToHorz, 10, y_count);
-                // y_count += 15;
-                // draw_count_number(&gGfxHead, 0, 2, baseCoord, 10, y_count);
-                // y_count += 15;
-                // draw_count_number(&gGfxHead, 0, 2, largestCoord, 10, y_count);
-                // y_count += 15;
-                // draw_count_number(&gGfxHead, 0, 2, smallestCoord, 10, y_count);
-                // y_count += 15;
-                // draw_count_number(&gGfxHead, 0, 2, rotationDirection, 10, y_count);
-                // y_count += 15;
-                // draw_count_number(&gGfxHead, 0, 2, wallDistance, 10, y_count);
-                // y_count += 15;
-                // draw_count_number(&gGfxHead, 0, 2, offsetLen, 10, y_count);
-                // y_count += 15;
-                // draw_count_number(&gGfxHead, 0, 2, pivotRotated, 10, y_count);
-                // y_count += 15;
 
                 switch (evs_gamemode) {
                     case GMD_TIME_ATTACK:
