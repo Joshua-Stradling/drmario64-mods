@@ -383,6 +383,8 @@ int check_right_wall(GameMapCell *mapCells, Capsule *capsule, int offset);
 int check_left_wall(GameMapCell *mapCells, Capsule *capsule, int offset);
 int check_bottom(GameMapCell *mapCells, Capsule *capsule, int offset);
 int check_top(GameMapCell *mapCells, Capsule *capsule, int offset);
+void reset_chain_data(struct_game_state_data *gameStateData);
+bool sticky_garbage_dequeue(struct_game_state_data *gameStateData);
 bool is_piece_unstable(Capsule *capsule, u8 garbage_index, GameMapCell *mapCells);
 bool is_player_ai(u8 player_index);
 void update_team_stock(struct_game_state_data *attacker, s32 teammate_bitmask);

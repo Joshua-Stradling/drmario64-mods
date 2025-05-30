@@ -1008,71 +1008,6 @@ void rotate_capsel(GameMapCell *mapCells, Capsule *capsule, s32 rotation_directi
     }
 }
 
-void rotate_capsel_temp(GameMapCell *mapCells, Capsule *arg1, s32 arg2) {
-    s32 var_s1 = 0;
-    s32 temp;
-
-    if ((arg1->y[0] <= 0) || (arg1->display_flag == 0)) {
-        return;
-    }
-
-    if (arg1->x[0] == arg1->x[1]) {
-        if ((arg1->x[0] == 7) || (get_map_info(mapCells, arg1->x[0] + 1, arg1->y[0]) == 1)) {
-            if ((arg1->x[0] != 0) && (get_map_info(mapCells, arg1->x[0] - 1, arg1->y[0]) != 1)) {
-                arg1->x[0]--;
-                var_s1 = 1;
-            }
-        } else {
-            arg1->x[1]++;
-            var_s1 = 1;
-        }
-
-        if (var_s1 != 0) {
-            arg1->y[1]++;
-            if (arg2 == -1) {
-                temp = arg1->palette_index[0];
-                arg1->palette_index[0] = arg1->palette_index[1];
-                arg1->palette_index[1] = temp;
-            }
-        }
-    } else {
-        if (arg1->y[0] == 1) {
-            arg1->x[1]--;
-            var_s1 = -1;
-        } else if (get_map_info(mapCells, arg1->x[0], arg1->y[0] - 1) == 1) {
-            if (get_map_info(mapCells, arg1->x[0] + 1, arg1->y[0] - 1) != 1) {
-                arg1->x[0]++;
-                var_s1 = -1;
-            }
-        } else {
-            arg1->x[1]--;
-            var_s1 = -1;
-        }
-
-        if (var_s1 != 0) {
-            arg1->y[1]--;
-            if (arg2 == 1) {
-                temp = arg1->palette_index[0];
-                arg1->palette_index[0] = arg1->palette_index[1];
-                arg1->palette_index[1] = temp;
-            }
-        }
-    }
-
-    if (var_s1 != 0) {
-        s32 i;
-
-        dm_snd_play_in_game(SND_INDEX_67);
-
-        // Only update sprites for base capsule (first 2 pieces)
-        for (i = 0; i < 2; i++) {
-            temp = rotate_table_474[arg1->sprite_index[i]];
-            temp += var_s1;
-            arg1->sprite_index[i] = rotate_mtx_475[temp];
-        }
-    }
-}
-
 #define CAPSMAGAZINE_GET_A(mag) (((mag) >> 4) % 3)
 #define CAPSMAGAZINE_GET_B(mag) ((mag) % 3)
 
@@ -1651,6 +1586,24 @@ bool dm_black_up(struct_game_state_data *gameStateDataP, GameMapCell *mapCells) 
     return false;
 }
 
+// Clears chain-related scoring and color flags after a garbage event
+void reset_chain_data(struct_game_state_data *gameStateData) {
+    u8 i;
+
+    if (gameStateData->unk_03B < gameStateData->unk_03A) {
+        gameStateData->unk_03B = gameStateData->unk_03A;
+    }
+
+    gameStateData->unk_03A = 0;
+    gameStateData->unk_039 = 0;
+    gameStateData->unk_037 = 0;
+    gameStateData->unk_038 = 0;
+
+    for (i = 0; i < 4U; i++) {
+        gameStateData->unk_03C[i] = 0;
+    }
+}
+
 bool dm_broken_set(struct_game_state_data *gameStateData, GameMapCell *mapCells) {
     struct_game_state_data_unk_050 sp20[ARRAY_COUNTU(gameStateData->unk_050)];
     s32 pad[0x18] UNUSED;
@@ -1659,18 +1612,7 @@ bool dm_broken_set(struct_game_state_data *gameStateData, GameMapCell *mapCells)
     s32 var_s1;
 
     if (gameStateData->unk_050[0].unk_0 != 0) {
-        if (gameStateData->unk_03B < gameStateData->unk_03A) {
-            gameStateData->unk_03B = gameStateData->unk_03A;
-        }
-
-        gameStateData->unk_03A = 0;
-        gameStateData->unk_039 = 0;
-        gameStateData->unk_037 = 0;
-        gameStateData->unk_038 = 0;
-
-        for (var_s0 = 0; var_s0 < 4U; var_s0++) {
-            gameStateData->unk_03C[var_s0] = 0;
-        }
+        reset_chain_data(gameStateData);
 
         for (var_s0 = 0, var_s1 = 7; var_s0 < 0x10U; var_s0 += 2, var_s1--) {
             u32 temp_v0_2 = gameStateData->unk_050[0].unk_0 & (3 << var_s0);
@@ -1700,6 +1642,40 @@ bool dm_broken_set(struct_game_state_data *gameStateData, GameMapCell *mapCells)
     }
 
     return ret;
+}
+
+// Sticky garbage equivalent of dm_broken_set()
+bool sticky_garbage_dequeue(struct_game_state_data *gameStateData) {
+    StickyGarbageSlot current_slot = gameStateData->sticky_garbage_queue[0];
+
+    // Add garbage to capsule if there is garbage in the first slot of the queue 
+    if (current_slot.garbage_count != 0) {
+        u8 i;
+        u8 j;
+        StickyGarbageSlot empty = {0};
+
+        // Copy of queue (so we can shift it over when done)
+        StickyGarbageSlot copy[NUM_OF_STICKY_SLOTS];
+
+        reset_chain_data(gameStateData);
+
+        // Add garbage from queue to upcoming capsule
+        add_garbage_to_capsule(&gameStateData->preview_capsule, current_slot.garbage_colors, current_slot.garbage_count);
+
+        // Copy and clear sticky queue
+        for (i = 0; i < NUM_OF_STICKY_SLOTS; i++) {
+            copy[i] = gameStateData->sticky_garbage_queue[i];
+            gameStateData->sticky_garbage_queue[i] = empty;
+        }
+
+        // Shift queue over one using copy
+        for (i = 0, j = 1; j < NUM_OF_STICKY_SLOTS; i++, j++) {
+            gameStateData->sticky_garbage_queue[i] = copy[j];
+        }
+        
+        return true;
+    }
+    return false;
 }
 
 void dm_calc_erase_score_pos(struct_game_state_data *arg0, GameMapCell *mapCells, dm_calc_erase_score_pos_arg2 *arg2) {
@@ -2813,7 +2789,7 @@ s32 dm_set_attack_2p(struct_game_state_data *attacker) {
         StickyGarbageSlot *slot = &receiver->sticky_garbage_queue[0];
 
         // How many pieces of sticky garbage to send
-        u8 sticky_garbage_count = MIN(MAX_STICKY_GARBAGE, attacker->unk_03A - 1) - slot->garbage_count;
+        u8 sticky_garbage_count = MIN(MIN(MAX_STICKY_GARBAGE, attacker->unk_03A - 1), MAX_STICKY_GARBAGE - slot->garbage_count);
 
         // Mark who sent garbage
         slot->sender_index = attacker->unk_04B;
@@ -4169,7 +4145,7 @@ s32 dm_game_main_cnt(struct_game_state_data *gameStateDataRef, GameMapCell *mapC
                             animeState_set(&gameStateDataRef->unk_094, 1);
                         }
 
-                        if (dm_broken_set(gameStateDataRef, mapCells)) {
+                        if (dm_broken_set(gameStateDataRef, mapCells) || sticky_garbage_dequeue(gameStateDataRef)) {
                             animeState_set(&gameStateDataRef->unk_094, 2);
                             var_s6 = false;
                             dm_snd_play_in_game(_charSE_tbl[gameStateDataRef->unk_090] + 3);
@@ -4190,7 +4166,7 @@ s32 dm_game_main_cnt(struct_game_state_data *gameStateDataRef, GameMapCell *mapC
                         animeState_set(&gameStateDataRef->unk_094, 1);
                     }
 
-                    if (dm_broken_set(gameStateDataRef, mapCells)) {
+                    if (dm_broken_set(gameStateDataRef, mapCells)|| sticky_garbage_dequeue(gameStateDataRef)) {
                         animeState_set(&gameStateDataRef->unk_094, 2);
                         var_s6 = false;
                         gameStateDataRef->unk_00C = GAMESTATEDATA_UNK_00C_8;
@@ -4386,7 +4362,7 @@ s32 dm_game_main_cnt(struct_game_state_data *gameStateDataRef, GameMapCell *mapC
                 dm_attack_se(gameStateDataRef, index);
                 dm_set_attack_4p(gameStateDataRef);
                 animeState_set(&gameStateDataRef->unk_094, 1);
-                if (dm_broken_set(gameStateDataRef, mapCells)) {
+                if (dm_broken_set(gameStateDataRef, mapCells) || sticky_garbage_dequeue(gameStateDataRef)) {
                     gameStateDataRef->unk_00C = GAMESTATEDATA_UNK_00C_8;
                     var_s6 = false;
                 }
