@@ -373,9 +373,6 @@ typedef struct struct_gameBackup {
     /* 0x30FC */ s32 gameTime;
 } struct_gameBackup; // updated size = 0x2FB8 + ((0x416 - 0x3C4) * 4) = 0x3100
 
-// Original rotate_capsel() function (keep for AI players)
-void rotate_capsel_temp(GameMapCell *mapCells, Capsule *arg1, s32 arg2);
-
 // Functions added for mod
 bool capsule_playable(Capsule *capsule);
 Point rotated_coords(Capsule *capsule, int capsule_index, bool vertical_to_horizontal, s32 rotation_direction, Point pivot_rotated);
