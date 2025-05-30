@@ -844,7 +844,7 @@ void switch_capsule_colors(Capsule *capsule) {
 /**
  * Original name: rotate_capsel
  */
-// Original rotate_capsel() functionality:
+// Original rotate_capsel() functionality (updated function should maintain it with sticky garbage additions):
 // Vert-horz rotation: clockwise (if counterclockwise, switch base piece colors after rotation)
 // Horz-vert rotation: counterclockwise (if clockwise, switch base piece colors after rotation)
 // Index 0, also known as the pivot piece, or pivot base piece, is always below 
@@ -852,18 +852,7 @@ void switch_capsule_colors(Capsule *capsule) {
 // If rotation is backwards, swap base index colors (just colors, not indexes).
 // If the horz-vert rotation is blocked above pivot piece, try a swap kick, 
 //   or where the pieces will rotate in respect to the NON-pivot base piece.
-
-// Sticky garbage additions (should maintain original functionality for domino capsules):
-// Garbage pieces (indexes 2 and greater) rotate with respect to the color originally 
-//   associated with pivot (if rotation is backwards, they will rotate with respect to the non-pivot base piece).
-// If rotation is backwards, count from non-pivot base to the other offset (and flop after rotation).
-// If wall kick off the left or top, reverse which offset you count to (but don't flop or count from other base).
-
-// TL;DR
-// vert-horz rotation: clockwise, count from pivot, right wall, count upwards
-// horz-vert rotation: counterclockwise, count from pivot, bottom, count leftwards
 void rotate_capsel(GameMapCell *mapCells, Capsule *capsule, s32 rotation_direction) {
-
     s32 temp;
     s32 i;
 
@@ -910,9 +899,6 @@ void rotate_capsel(GameMapCell *mapCells, Capsule *capsule, s32 rotation_directi
         // garbage pieces will rotate accordingly)
         rotate_base_coord = capsule->pos_y[0];
 
-        // Debugging
-        baseCoord = 
-
         // Calculate the largest and smallest y-coords in the capsule
         largest_coord = capsule->pos_y[0];
         for (i = 1; i < capsule->piece_count; i++) {
@@ -930,82 +916,72 @@ void rotate_capsel(GameMapCell *mapCells, Capsule *capsule, s32 rotation_directi
         // Continue if rotating clockwise
         if (rotation_direction == 1) {
             
-            // // Check for block/wall on the right
-            // offset = capsule->pos_y[0] - smallest_coord;
-            // for (i = 1; i <= offset; i++) {
-            //     if (capsule->pos_x[0] + i == GAME_MAP_COLUMNS || 
-            //         get_map_info(mapCells, capsule->pos_x[0] + i, capsule->pos_y[0]) == 1
-            //     ) {
-            //         wall_distance = i;
-            //         break;
-            //     }
-            // }
+            // Check for block/wall on the right
+            offset = capsule->pos_y[0] - smallest_coord;
+            for (i = 1; i <= offset; i++) {
+                if (capsule->pos_x[0] + i == GAME_MAP_COLUMNS || 
+                    get_map_info(mapCells, capsule->pos_x[0] + i, capsule->pos_y[0]) == 1
+                ) {
+                    wall_distance = i;
+                    break;
+                }
+            }
 
-            // // If a wall wasn't found, check on the left
-            // if (wall_distance == 0) {
-            //     offset = capsule->pos_y[0] - largest_coord;
-            //     for (i = -1; i >= offset; i--) {
-            //         if (capsule->pos_x[0] + i == -1 || 
-            //             get_map_info(mapCells, capsule->pos_x[0] + i, capsule->pos_y[0]) == 1
-            //         ) {
-            //             wall_distance = i;
-            //             break;
-            //         }
-            //     }
-            // }
-
-            // If wall still hasn't been found, reset offset
+            // If a wall wasn't found, check on the left
             if (wall_distance == 0) {
-                offset = 0;
+                offset = capsule->pos_y[0] - largest_coord;
+                for (i = -1; i >= offset; i--) {
+                    if (capsule->pos_x[0] + i == -1 || 
+                        get_map_info(mapCells, capsule->pos_x[0] + i, capsule->pos_y[0]) == 1
+                    ) {
+                        wall_distance = i;
+                        break;
+                    }
+                }
             }
         }
 
         // Continue if rotating counter-clockwise
         else {
 
-            // // Check for block/wall on the right
-            // offset = largest_coord - capsule->pos_y[1];
-            // for (i = 1; i <= offset; i++) {
-            //     if (capsule->pos_x[0] + i == GAME_MAP_COLUMNS || 
-            //         get_map_info(mapCells, capsule->pos_x[0] + i, capsule->pos_y[0]) == 1
-            //     ) {
-            //         wall_distance = i;
-            //         break;
-            //     }
-            // }
+            // Check for block/wall on the right
+            offset = largest_coord - capsule->pos_y[1];
+            for (i = 1; i <= offset; i++) {
+                if (capsule->pos_x[0] + i == GAME_MAP_COLUMNS || 
+                    get_map_info(mapCells, capsule->pos_x[0] + i, capsule->pos_y[0]) == 1
+                ) {
+                    wall_distance = i;
+                    break;
+                }
+            }
 
-            // // If a wall wasn't found, check on the left
-            // if (wall_distance == 0) {
-            //     offset = smallest_coord - capsule->pos_y[1];
-            //     for (i = -1; i >= offset; i--) {
-            //         if (capsule->pos_x[0] + i == -1 || 
-            //             get_map_info(mapCells, capsule->pos_x[0] + i, capsule->pos_y[0]) == 1
-            //         ) {
-            //             wall_distance = i;
-            //             break;
-            //         }
-            //     }
-            // }
-
-            // If wall still hasn't been found, reset offset
+            // If a wall wasn't found, check on the left
             if (wall_distance == 0) {
-                offset = 0;
+                offset = smallest_coord - capsule->pos_y[1];
+                for (i = -1; i >= offset; i--) {
+                    if (capsule->pos_x[0] + i == -1 || 
+                        get_map_info(mapCells, capsule->pos_x[0] + i, capsule->pos_y[0]) == 1
+                    ) {
+                        wall_distance = i;
+                        break;
+                    }
+                }
             }
         }
 
         // If there's a wall on the right, calculate the pivot's rotated x-coord
         if (wall_distance > 0) {
-            pivot_rotated = capsule->pos_x[0] + (offset - wall_distance - 1);
+            pivot_rotated = capsule->pos_x[0] - (1 + (offset - wall_distance));
         }
 
         // If there's a wall on the left, calculate the pivot's rotated x-coord
         else if (wall_distance < 0) {
-            pivot_rotated = capsule->pos_x[0] + (offset - wall_distance + 1);
+            pivot_rotated = capsule->pos_x[0] + (1 - (offset - wall_distance));
         }
         
         // If a wall kick is not required, calculate the pivot's rotated x-coord
         else {
-            pivot_rotated = capsule->pos_x[0] + offset;
+            pivot_rotated = capsule->pos_x[0];
         }
         
         // Make rotation changes if it the area is clear
@@ -1044,39 +1020,39 @@ void rotate_capsel(GameMapCell *mapCells, Capsule *capsule, s32 rotation_directi
             }
         }
 
-        // // Check if a swap kick is needed (if there is a block above 
-        // // pivot, but not above non-pivot base piece)
-        // if (get_map_info(mapCells, capsule->pos_x[0], capsule->pos_y[0] - 1) == 1 
-        //     && get_map_info(mapCells, capsule->pos_x[1], capsule->pos_y[1] - 1) == 0
-        // ) {
+        // Check if a swap kick is needed (if there is a block above 
+        // pivot, but not above non-pivot base piece)
+        if (get_map_info(mapCells, capsule->pos_x[0], capsule->pos_y[0] - 1) == 1 
+            && get_map_info(mapCells, capsule->pos_x[1], capsule->pos_y[1] - 1) == 0
+        ) {
             
-        //     // Assuming we do a swap kick, set to original x-coord of 
-        //     // NON-pivot base piece (so that the pivot piece will rotate 
-        //     // to the same level, and potential garbage pieces will 
-        //     // rotate accordingly)
-        //     rotate_base_coord = capsule->pos_x[1];
+            // Assuming we do a swap kick, set to original x-coord of 
+            // NON-pivot base piece (so that the pivot piece will rotate 
+            // to the same level, and potential garbage pieces will 
+            // rotate accordingly)
+            rotate_base_coord = capsule->pos_x[1];
 
-        //     // Get offset values, needed to check if each updated location 
-        //     // is clear (offset is calculated different based on rotation... 
-        //     // start with counter-clockwise, then clockwise)
-        //     if (rotation_direction == -1) {
-        //         offset = capsule->pos_y[0] - smallest_coord;
-        //     }
-        //     else {
-        //         offset = largest_coord - capsule->pos_y[1];
-        //     }
+            // Get offset values, needed to check if each updated location 
+            // is clear (offset is calculated different based on rotation... 
+            // start with counter-clockwise, then clockwise)
+            if (rotation_direction == -1) {
+                offset = capsule->pos_x[0] - smallest_coord;
+            }
+            else {
+                offset = largest_coord - capsule->pos_x[1];
+            }
 
-        //     // Calculate the pivot's potential rotated x-coord (if swap kick is safe)
-        //     temp = capsule->pos_x[0] - offset;
+            // Calculate pivot's potential rotated x-coord (for if swap kick is safe)
+            temp = capsule->pos_y[1] - offset;
 
-        //     // Plan to do swap kick if area is clear
-        //     if (safe_to_rotate(mapCells, capsule, vertical_to_horizontal, 
-        //         rotation_direction, temp, rotate_base_coord)
-        //     ) {
-        //         do_swap_kick = true;
-        //         pivot_rotated = temp;
-        //     }
-        // }
+            // Plan to do swap kick if area is clear
+            if (safe_to_rotate(mapCells, capsule, vertical_to_horizontal, 
+                rotation_direction, temp, rotate_base_coord)
+            ) {
+                do_swap_kick = true;
+                pivot_rotated = temp;
+            }
+        }
 
         // If a swap kick hasn't been planned, do other wall kicks (if 
         // needed), and complete rotation
@@ -1090,82 +1066,76 @@ void rotate_capsel(GameMapCell *mapCells, Capsule *capsule, s32 rotation_directi
             // Continue if rotating counter-clockwise
             if (rotation_direction == -1) {
                 
-                // // Check for block/wall on the bottom
-                // offset = capsule->pos_x[0] - smallest_coord;
-                // for (i = 1; i <= offset; i++) {
-                //     if (capsule->pos_y[0] + i == GAME_MAP_ROWS || 
-                //         get_map_info(mapCells, capsule->pos_x[0], capsule->pos_y[0] + i) == 1
-                //     ) {
-                //         wall_distance = i;
-                //         break;
-                //     }
-                // }
+                // Check for block/wall on the bottom
+                offset = capsule->pos_x[0] - smallest_coord;
+                for (i = 1; i <= offset; i++) {
+                    if (capsule->pos_y[0] + i == GAME_MAP_ROWS || 
+                        get_map_info(mapCells, capsule->pos_x[0], capsule->pos_y[0] + i) == 1
+                    ) {
+                        wall_distance = i;
+                        break;
+                    }
+                }
 
-                // // If a wall wasn't found, check on the top (the ceiling doesn't 
-                // // count according to original mechanics... must be something else)
-                // if (wall_distance == 0) {
-                //     offset = capsule->pos_x[0] - largest_coord;
-                //     for (i = -1; i >= offset; i--) {
-                //         if (get_map_info(mapCells, capsule->pos_x[0], capsule->pos_y[0] + i) == 1
-                //         ) {
-                //             wall_distance = i;
-                //             break;
-                //         }
-                //     }
-                // }
-
-                // If wall still hasn't been found, reset offset
+                // If a wall wasn't found, check on the top (the ceiling doesn't 
+                // count according to original mechanics... in fact there are 
+                // no downwards wall kicks in original, but with long garbages 
+                // it might be important)
                 if (wall_distance == 0) {
-                    offset = 0;
+                    offset = capsule->pos_x[0] - largest_coord;
+                    for (i = -1; i >= offset; i--) {
+                        if (get_map_info(mapCells, capsule->pos_x[0], capsule->pos_y[0] + i) == 1
+                        ) {
+                            wall_distance = i;
+                            break;
+                        }
+                    }
                 }
             }
 
             // Continue if rotating clockwise
             else {
 
-                // // Check for block/wall on the bottom
-                // offset = largest_coord - capsule->pos_x[1];
-                // for (i = 1; i <= offset; i++) {
-                //     if (capsule->pos_y[0] + i == GAME_MAP_ROWS || 
-                //         get_map_info(mapCells, capsule->pos_x[0], capsule->pos_y[0] + i) == 1
-                //     ) {
-                //         wall_distance = i;
-                //         break;
-                //     }
-                // }
+                // Check for block/wall on the bottom
+                offset = largest_coord - capsule->pos_x[1];
+                for (i = 1; i <= offset; i++) {
+                    if (capsule->pos_y[0] + i == GAME_MAP_ROWS || 
+                        get_map_info(mapCells, capsule->pos_x[0], capsule->pos_y[0] + i) == 1
+                    ) {
+                        wall_distance = i;
+                        break;
+                    }
+                }
 
-                // // If a wall wasn't found, check on the top (the ceiling doesn't 
-                // // count according to original mechanics... must be something else)
-                // if (wall_distance == 0) {
-                //     offset = smallest_coord - capsule->pos_x[1];
-                //     for (i = -1; i >= offset; i--) {
-                //         if (get_map_info(mapCells, capsule->pos_x[0], capsule->pos_y[0] + i) == 1
-                //         ) {
-                //             wall_distance = i;
-                //             break;
-                //         }
-                //     }
-                // }
-
-                // If wall still hasn't been found, reset offset
+                // If a wall wasn't found, check on the top (the ceiling doesn't 
+                // count according to original mechanics... in fact there are 
+                // no downwards wall kicks in original, but with long garbages 
+                // it might be important)
                 if (wall_distance == 0) {
-                    offset = 0;
+                    offset = smallest_coord - capsule->pos_x[1];
+                    for (i = -1; i >= offset; i--) {
+                        if (get_map_info(mapCells, capsule->pos_x[0], capsule->pos_y[0] + i) == 1
+                        ) {
+                            wall_distance = i;
+                            break;
+                        }
+                    }
                 }
             }
-
-            // If there's a wall on the right, calculate the pivot's rotated x-coord
+            
+            // If there's a wall on the bottom, calculate the pivot's rotated y-coord
             if (wall_distance > 0) {
-                pivot_rotated = capsule->pos_y[0] + (offset - wall_distance - 1);
+                pivot_rotated = capsule->pos_y[0] - (1 + (offset - wall_distance));
             }
 
-            // If there's a wall on the left, calculate the pivot's rotated x-coord
+            // If there's a wall on the top, calculate the pivot's rotated y-coord
             else if (wall_distance < 0) {
-                pivot_rotated = capsule->pos_y[0] + (offset - wall_distance + 1);
+                pivot_rotated = capsule->pos_y[0] + (1 - (offset - wall_distance));
             }
             
-            // If a wall kick is not required, calculate the pivot's rotated x-coord
+            // If a wall kick is not required, calculate the pivot's rotated y-coord
             else {
-                pivot_rotated = capsule->pos_y[0] + offset;
+                pivot_rotated = capsule->pos_y[0];
             }
         }
         
@@ -9639,7 +9609,7 @@ void dm_game_graphic2(void) {
         case GSL_VSCPU:
         case GSL_2DEMO:
             if (!debug_flag && !st->bg_snapping) {
-                // u8 y_count = 10;
+                u8 y_count = 10;
                 
                 disp_logo_setup(&gGfxHead);
 
@@ -9650,23 +9620,23 @@ void dm_game_graphic2(void) {
                                       _posP2VirusNum[i][1], 1.0f, 1.0f);
                 }
 
-                // // -- Debug print tools for 2 player --
-                // draw_count_number(&gGfxHead, 0, 2, vertToHorz, 10, y_count);
-                // y_count += 15;
-                // draw_count_number(&gGfxHead, 0, 2, baseCoord, 10, y_count);
-                // y_count += 15;
-                // draw_count_number(&gGfxHead, 0, 2, largestCoord, 10, y_count);
-                // y_count += 15;
-                // draw_count_number(&gGfxHead, 0, 2, smallestCoord, 10, y_count);
-                // y_count += 15;
-                // draw_count_number(&gGfxHead, 0, 2, rotationDirection, 10, y_count);
-                // y_count += 15;
-                // draw_count_number(&gGfxHead, 0, 2, wallDistance, 10, y_count);
-                // y_count += 15;
-                // draw_count_number(&gGfxHead, 0, 2, offsetLen, 10, y_count);
-                // y_count += 15;
-                // draw_count_number(&gGfxHead, 0, 2, pivotRotated, 10, y_count);
-                // y_count += 15;
+                // -- Debug print tools for 2 player --
+                draw_count_number(&gGfxHead, 0, 2, vertToHorz, 10, y_count);
+                y_count += 15;
+                draw_count_number(&gGfxHead, 0, 2, baseCoord, 10, y_count);
+                y_count += 15;
+                draw_count_number(&gGfxHead, 0, 2, largestCoord, 10, y_count);
+                y_count += 15;
+                draw_count_number(&gGfxHead, 0, 2, smallestCoord, 10, y_count);
+                y_count += 15;
+                draw_count_number(&gGfxHead, 0, 2, rotationDirection, 10, y_count);
+                y_count += 15;
+                draw_count_number(&gGfxHead, 0, 2, wallDistance, 10, y_count);
+                y_count += 15;
+                draw_count_number(&gGfxHead, 0, 2, offsetLen, 10, y_count);
+                y_count += 15;
+                draw_count_number(&gGfxHead, 0, 2, pivotRotated, 10, y_count);
+                y_count += 15;
 
                 switch (evs_gamemode) {
                     case GMD_TIME_ATTACK:
