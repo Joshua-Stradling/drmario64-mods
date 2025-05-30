@@ -2944,14 +2944,37 @@ void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
             set_map(map, capsule->pos_x[i], capsule->pos_y[i], capsule->sprite_index[i],
                 capsule->palette_index[i] + black_color_1384[state->flg_game_over]);
             
-            // If this is a garbage piece (and there isn't a block below it), mark 
-            // that it is unstable, so that it will fall when go_down() is called
-            if (i > 1 && get_map_info(map, capsule->pos_x[i], capsule->pos_y[i] + 1) == 0) {
+            // If this is an unstable garbage piece, mark that it is unstable, 
+            // so that it will fall when go_down() is called
+            if (i > 1 && is_piece_unstable(capsule, i, map)) {
                 s32 index = GAME_MAP_GET_INDEX(capsule->pos_y[i] - 1, capsule->pos_x[i]);
                 map[index].capsel_m_flg[1] = 1;
             }
         }
     }
+}
+
+// Identify a garbage piece as unstable if there is no supporting blocks, and 
+// if there are no supporting pieces that are stable
+bool is_piece_unstable(Capsule *capsule, u8 garbage_index, GameMapCell *mapCells) {
+    u8 i;
+
+    // Mark piece as stable if there is a block beneath it
+    if (get_map_info(mapCells, capsule->pos_x[garbage_index], capsule->pos_y[garbage_index] + 1) == 1) {
+        return false;
+    }
+
+    // Check if there is a stable piece beneath it
+    for (i = 0; i < capsule->piece_count; i++) {
+        if ((capsule->pos_x[garbage_index] == capsule->pos_x[i]) && (capsule->pos_y[garbage_index] + 1 == capsule->pos_y[i])) {
+
+            // If the piece beneath it is stable, mark that this piece is stable as well
+            if (!is_piece_unstable(capsule, i, mapCells)) return false;
+        }
+    }
+
+    // Otherwise, this must be an unstable garbage piece
+    return true;
 }
 
 /**
@@ -4712,38 +4735,38 @@ DmMainCnt dm_game_main_cnt(struct_game_state_data *state, GameMapCell *map, s32 
 
             if (var_s6) {
 
-                // // Figure out which player we are modifying
-                // u8 player_index = get_player_index(state); // for debugging purposes
+                // Figure out which player we are modifying
+                u8 player_index = get_player_index(state); // for debugging purposes
 
                 dm_set_capsel(state);
 
-                // // If this is player 1, randomly decide whether to add garbage 
-                // // to their upcoming capsule (for debugging purposes)
-                // if (player_index == 0) {
-                //     u8 num_of_garbage = 0;
+                // If this is player 1, randomly decide whether to add garbage 
+                // to their upcoming capsule (for debugging purposes)
+                if (player_index == 0) {
+                    u8 num_of_garbage = 0;
 
-                //     // Randomly decide whether or not to add garbage
-                //     u8 garbage_chance = random(3);
-                //     if (garbage_chance == 1) {
-                //         num_of_garbage = 1;
-                //     }
-                //     else if (garbage_chance == 2) {
-                //         num_of_garbage = 2;
-                //     }
+                    // Randomly decide whether or not to add garbage
+                    u8 garbage_chance = random(3);
+                    if (garbage_chance == 1) {
+                        num_of_garbage = 1;
+                    }
+                    else if (garbage_chance == 2) {
+                        num_of_garbage = 2;
+                    }
 
-                //     // If we are adding garbage, generate and add garbage to capsule
-                //     if (num_of_garbage) {
-                //         u8 i;
-                //         s8 garbage_colors[num_of_garbage];
+                    // If we are adding garbage, generate and add garbage to capsule
+                    if (num_of_garbage) {
+                        u8 i;
+                        s8 garbage_colors[num_of_garbage];
 
-                //         for (i = 0; i < num_of_garbage; i++) {
-                //             garbage_colors[i] = random(3);
-                //         }
+                        for (i = 0; i < num_of_garbage; i++) {
+                            garbage_colors[i] = random(3);
+                        }
 
-                //         add_garbage_to_capsule(&state->next_cap, 
-                //                                garbage_colors, num_of_garbage);
-                //     }
-                // }
+                        add_garbage_to_capsule(&state->next_cap, 
+                                               garbage_colors, num_of_garbage);
+                    }
+                }
 
                 dm_capsel_speed_up(state);
                 if (state->chain_line_max < state->chain_line) {
