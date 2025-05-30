@@ -2554,14 +2554,37 @@ void dm_capsel_down(struct_game_state_data *gameStateData, GameMapCell *mapCells
             set_map(mapCells, capsule->x[i], capsule->y[i], capsule->sprite_index[i],
                 capsule->palette_index[i] + black_color_1384[gameStateData->unk_049]);
             
-            // If this is a garbage piece (and there isn't a block below it), mark 
-            // that it is unstable, so that it will fall when go_down() is called
-            if (i > 1 && get_map_info(mapCells, capsule->x[i], capsule->y[i] + 1) == 0) {
+            // If this is an unstable garbage piece, mark that it is unstable, 
+            // so that it will fall when go_down() is called
+            if (i > 1 && is_piece_unstable(capsule, i, mapCells)) {
                 s32 index = GAME_MAP_GET_INDEX(capsule->y[i] - 1, capsule->x[i]);
                 mapCells[index].unk_4[1] = 1;
             }
         }
     }
+}
+
+// Identify a garbage piece as unstable if there is no supporting blocks, and 
+// if there are no supporting pieces that are stable
+bool is_piece_unstable(Capsule *capsule, u8 garbage_index, GameMapCell *mapCells) {
+    u8 i;
+
+    // Mark piece as stable if there is a block beneath it
+    if (get_map_info(mapCells, capsule->x[garbage_index], capsule->y[garbage_index] + 1) == 1) {
+        return false;
+    }
+
+    // Check if there is a stable piece beneath it
+    for (i = 0; i < capsule->piece_count; i++) {
+        if ((capsule->x[garbage_index] == capsule->x[i]) && (capsule->y[garbage_index] + 1 == capsule->y[i])) {
+
+            // If the piece beneath it is stable, mark that this piece is stable as well
+            if (!is_piece_unstable(capsule, i, mapCells)) return false;
+        }
+    }
+
+    // Otherwise, this must be an unstable garbage piece
+    return true;
 }
 
 s32 func_80063844(u32 arg0) {
@@ -4220,38 +4243,38 @@ s32 dm_game_main_cnt(struct_game_state_data *gameStateDataRef, GameMapCell *mapC
 
             if (var_s6) {
 
-                // // Figure out which player we are modifying
-                // u8 player_index = get_player_index(gameStateDataRef); // for debugging purposes
+                // Figure out which player we are modifying
+                u8 player_index = get_player_index(gameStateDataRef); // for debugging purposes
 
                 dm_set_capsel(gameStateDataRef);
 
-                // // If this is player 1, randomly decide whether to add garbage 
-                // // to their upcoming capsule (for debugging purposes)
-                // if (player_index == 0) {
-                //     u8 num_of_garbage = 0;
+                // If this is player 1, randomly decide whether to add garbage 
+                // to their upcoming capsule (for debugging purposes)
+                if (player_index == 0) {
+                    u8 num_of_garbage = 0;
 
-                //     // Randomly decide whether or not to add garbage
-                //     u8 garbage_chance = random(3);
-                //     if (garbage_chance == 1) {
-                //         num_of_garbage = 1;
-                //     }
-                //     else if (garbage_chance == 2) {
-                //         num_of_garbage = 2;
-                //     }
+                    // Randomly decide whether or not to add garbage
+                    u8 garbage_chance = random(3);
+                    if (garbage_chance == 1) {
+                        num_of_garbage = 1;
+                    }
+                    else if (garbage_chance == 2) {
+                        num_of_garbage = 2;
+                    }
 
-                //     // If we are adding garbage, generate and add garbage to capsule
-                //     if (num_of_garbage) {
-                //         u8 i;
-                //         s8 garbage_colors[num_of_garbage];
+                    // If we are adding garbage, generate and add garbage to capsule
+                    if (num_of_garbage) {
+                        u8 i;
+                        s8 garbage_colors[num_of_garbage];
 
-                //         for (i = 0; i < num_of_garbage; i++) {
-                //             garbage_colors[i] = random(3);
-                //         }
+                        for (i = 0; i < num_of_garbage; i++) {
+                            garbage_colors[i] = random(3);
+                        }
 
-                //         add_garbage_to_capsule(&gameStateDataRef->preview_capsule, 
-                //                                garbage_colors, num_of_garbage);
-                //     }
-                // }
+                        add_garbage_to_capsule(&gameStateDataRef->preview_capsule, 
+                                               garbage_colors, num_of_garbage);
+                    }
+                }
 
                 dm_capsel_speed_up(gameStateDataRef);
                 if (gameStateDataRef->unk_03B < gameStateDataRef->unk_03A) {
