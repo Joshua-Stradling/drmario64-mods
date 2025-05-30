@@ -373,14 +373,19 @@ typedef struct struct_gameBackup {
     /* 0x30FC */ s32 gameTime;
 } struct_gameBackup; // updated size = 0x2FB8 + ((0x416 - 0x3C4) * 4) = 0x3100
 
-// Original rotate_capsel() function (keep for AI players until wall kicks are added to updated rotate_capsel())
+// Original rotate_capsel() function (keep for AI players)
 void rotate_capsel_temp(GameMapCell *mapCells, Capsule *arg1, s32 arg2);
 
 // Functions added for mod
-Point rotated_coords(Capsule *capsule, int capsule_index, bool vertical_to_horizontal, s32 rotation_direction, int pivot_rotated, int rotate_base_coord);
-bool safe_to_rotate(GameMapCell *mapCells, Capsule *capsule, bool vertical_to_horizontal, s32 rotation_direction, int pivot_rotated, int rotate_base_coord);
-void set_rotate_capsule(Capsule *capsule, bool vertical_to_horizontal, s32 rotation_direction, int pivot_rotated, int rotate_base_coord);
+bool capsule_playable(Capsule *capsule);
+Point rotated_coords(Capsule *capsule, int capsule_index, bool vertical_to_horizontal, s32 rotation_direction, Point pivot_rotated);
+bool safe_to_rotate(GameMapCell *mapCells, Capsule *capsule, bool vertical_to_horizontal, s32 rotation_direction, Point pivot_rotated);
+void set_rotate_capsule(Capsule *capsule, bool vertical_to_horizontal, s32 rotation_direction, Point pivot_rotated);
 void switch_capsule_colors(Capsule *capsule);
+int check_right_wall(GameMapCell *mapCells, Capsule *capsule, int offset);
+int check_left_wall(GameMapCell *mapCells, Capsule *capsule, int offset);
+int check_bottom(GameMapCell *mapCells, Capsule *capsule, int offset);
+int check_top(GameMapCell *mapCells, Capsule *capsule, int offset);
 bool is_piece_unstable(Capsule *capsule, u8 garbage_index, GameMapCell *mapCells);
 bool is_player_ai(u8 player_index);
 void update_team_stock(struct_game_state_data *attacker, s32 teammate_bitmask);
