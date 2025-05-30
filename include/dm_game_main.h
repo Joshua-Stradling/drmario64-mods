@@ -278,13 +278,14 @@ typedef struct struct_game_state_data {
     /* 0x3D6 */ StickyGarbageSlot sticky_garbage_queue[NUM_OF_STICKY_SLOTS];
 } struct_game_state_data; // size = 0x3C4
 
-// Original rotate_capsel() function (keep for AI players until wall kicks are added to updated rotate_capsel())
+// Original rotate_capsel() function (keep for AI players)
 void rotate_capsel_temp(GameMapCell *map, Capsule *cap, s32 move_vec);
 
 // Functions added for mod
-Point rotated_coords(Capsule *capsule, int capsule_index, bool vertical_to_horizontal, s32 rotation_direction, int pivot_rotated, int rotate_base_coord);
-bool safe_to_rotate(GameMapCell *mapCells, Capsule *capsule, bool vertical_to_horizontal, s32 rotation_direction, int pivot_rotated, int rotate_base_coord);
-void set_rotate_capsule(Capsule *capsule, bool vertical_to_horizontal, s32 rotation_direction, int pivot_rotated, int rotate_base_coord);
+bool capsule_playable(Capsule *capsule);
+Point rotated_coords(Capsule *capsule, int capsule_index, bool vertical_to_horizontal, s32 rotation_direction, Point pivot_rotated);
+bool safe_to_rotate(GameMapCell *mapCells, Capsule *capsule, bool vertical_to_horizontal, s32 rotation_direction, Point pivot_rotated);
+void set_rotate_capsule(Capsule *capsule, bool vertical_to_horizontal, s32 rotation_direction, Point pivot_rotated);
 void switch_capsule_colors(Capsule *capsule);
 bool is_piece_unstable(Capsule *capsule, u8 garbage_index, GameMapCell *mapCells);
 bool is_player_ai(u8 player_index);
