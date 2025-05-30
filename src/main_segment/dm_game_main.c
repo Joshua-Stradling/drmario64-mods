@@ -1190,70 +1190,6 @@ void rotate_capsel(GameMapCell *mapCells, Capsule *capsule, s32 rotation_directi
     }
 }
 
-void rotate_capsel_temp(GameMapCell *map, Capsule *cap, s32 move_vec) {
-    s32 vec = 0;
-    s32 save;
-
-    if ((cap->pos_y[0] <= 0) || (cap->display_flag == 0)) {
-        return;
-    }
-
-    if (cap->pos_x[0] == cap->pos_x[1]) {
-        if ((cap->pos_x[0] == 7) || (get_map_info(map, cap->pos_x[0] + 1, cap->pos_y[0]) == 1)) {
-            if ((cap->pos_x[0] != 0) && (get_map_info(map, cap->pos_x[0] - 1, cap->pos_y[0]) != 1)) {
-                cap->pos_x[0]--;
-                vec = 1;
-            }
-        } else {
-            cap->pos_x[1]++;
-            vec = 1;
-        }
-
-        if (vec != 0) {
-            cap->pos_y[1]++;
-            if (move_vec == -1) {
-                save = cap->palette_index[0];
-                cap->palette_index[0] = cap->palette_index[1];
-                cap->palette_index[1] = save;
-            }
-        }
-    } else {
-        if (cap->pos_y[0] == 1) {
-            cap->pos_x[1]--;
-            vec = -1;
-        } else if (get_map_info(map, cap->pos_x[0], cap->pos_y[0] - 1) == 1) {
-            if (get_map_info(map, cap->pos_x[0] + 1, cap->pos_y[0] - 1) != 1) {
-                cap->pos_x[0]++;
-                vec = -1;
-            }
-        } else {
-            cap->pos_x[1]--;
-            vec = -1;
-        }
-
-        if (vec != 0) {
-            cap->pos_y[1]--;
-            if (move_vec == 1) {
-                save = cap->palette_index[0];
-                cap->palette_index[0] = cap->palette_index[1];
-                cap->palette_index[1] = save;
-            }
-        }
-    }
-
-    if (vec != 0) {
-        s32 i;
-
-        dm_snd_play_in_game(SND_INDEX_67);
-
-        for (i = 0; i < 2; i++) {
-            save = rotate_table_474[cap->sprite_index[i]];
-            save += vec;
-            cap->sprite_index[i] = rotate_mtx_475[save];
-        }
-    }
-}
-
 #define CAPSMAGAZINE_GET_A(mag) (((mag) >> 4) % 3)
 #define CAPSMAGAZINE_GET_B(mag) ((mag) % 3)
 
@@ -1894,6 +1830,24 @@ bool dm_black_up(struct_game_state_data *state, GameMapCell *map) {
     return false;
 }
 
+// Clears chain-related scoring and color flags after a garbage event
+void reset_chain_data(struct_game_state_data *state) {
+    u8 i;
+
+    if (state->chain_line_max < state->chain_line) {
+        state->chain_line_max = state->chain_line;
+    }
+
+    state->chain_line = 0;
+    state->chain_count = 0;
+    state->erase_virus_count = 0;
+    state->erase_virus_count_old = 0;
+
+    for (i = 0; i < 4U; i++) {
+        state->chain_color[i] = 0;
+    }
+}
+
 /**
  * Original name: dm_broken_set
  */
@@ -1905,18 +1859,7 @@ bool dm_broken_set(struct_game_state_data *state, GameMapCell *map) {
     u32 j;
 
     if (state->cap_attack_work[0].unk_0 != 0) {
-        if (state->chain_line_max < state->chain_line) {
-            state->chain_line_max = state->chain_line;
-        }
-
-        state->chain_line = 0;
-        state->chain_count = 0;
-        state->erase_virus_count = 0;
-        state->erase_virus_count_old = 0;
-
-        for (i = 0; i < ARRAY_COUNTU(state->chain_color); i++) {
-            state->chain_color[i] = 0;
-        }
+        reset_chain_data(state);
 
         for (i = 0, j = 7; i < 0x10; i += 2, j--) {
             u32 chack = state->cap_attack_work[0].unk_0 & (3 << i);
@@ -1946,6 +1889,40 @@ bool dm_broken_set(struct_game_state_data *state, GameMapCell *map) {
     }
 
     return ret;
+}
+
+// Sticky garbage equivalent of dm_broken_set()
+bool sticky_garbage_dequeue(struct_game_state_data *gameStateData) {
+    StickyGarbageSlot current_slot = gameStateData->sticky_garbage_queue[0];
+
+    // Add garbage to capsule if there is garbage in the first slot of the queue 
+    if (current_slot.garbage_count != 0) {
+        u8 i;
+        u8 j;
+        StickyGarbageSlot empty = {0};
+
+        // Copy of queue (so we can shift it over when done)
+        StickyGarbageSlot copy[NUM_OF_STICKY_SLOTS];
+
+        reset_chain_data(gameStateData);
+
+        // Add garbage from queue to upcoming capsule
+        add_garbage_to_capsule(&gameStateData->next_cap, current_slot.garbage_colors, current_slot.garbage_count);
+
+        // Copy and clear sticky queue
+        for (i = 0; i < NUM_OF_STICKY_SLOTS; i++) {
+            copy[i] = gameStateData->sticky_garbage_queue[i];
+            gameStateData->sticky_garbage_queue[i] = empty;
+        }
+
+        // Shift queue over one using copy
+        for (i = 0, j = 1; j < NUM_OF_STICKY_SLOTS; i++, j++) {
+            gameStateData->sticky_garbage_queue[i] = copy[j];
+        }
+        
+        return true;
+    }
+    return false;
 }
 
 typedef struct dm_calc_erase_score_pos_arg2 {
@@ -3217,7 +3194,7 @@ s32 dm_set_attack_2p(struct_game_state_data *attacker) {
         StickyGarbageSlot *slot = &receiver->sticky_garbage_queue[0];
 
         // How many pieces of sticky garbage to send
-        u8 sticky_garbage_count = MIN(MAX_STICKY_GARBAGE, attacker->chain_line - 1) - slot->garbage_count;
+        u8 sticky_garbage_count = MIN(MIN(MAX_STICKY_GARBAGE, attacker->chain_line - 1), MAX_STICKY_GARBAGE - slot->garbage_count);
 
         // Mark who sent garbage
         slot->sender_index = attacker->player_no;
@@ -4660,7 +4637,7 @@ DmMainCnt dm_game_main_cnt(struct_game_state_data *state, GameMapCell *map, s32 
                             animeState_set(&state->anime, ANIMENO_1);
                         }
 
-                        if (dm_broken_set(state, map)) {
+                        if (dm_broken_set(state, map) || sticky_garbage_dequeue(state)) {
                             animeState_set(&state->anime, ANIMENO_2);
                             var_s6 = false;
                             dm_snd_play_in_game(_charSE_tbl[state->charNo] + 3);
@@ -4681,7 +4658,7 @@ DmMainCnt dm_game_main_cnt(struct_game_state_data *state, GameMapCell *map, s32 
                         animeState_set(&state->anime, ANIMENO_1);
                     }
 
-                    if (dm_broken_set(state, map)) {
+                    if (dm_broken_set(state, map)|| sticky_garbage_dequeue(state)) {
                         animeState_set(&state->anime, ANIMENO_2);
                         var_s6 = false;
                         state->mode_now = dm_mode_ball_down;
@@ -4879,7 +4856,7 @@ DmMainCnt dm_game_main_cnt(struct_game_state_data *state, GameMapCell *map, s32 
                 dm_attack_se(state, player_no);
                 dm_set_attack_4p(state);
                 animeState_set(&state->anime, ANIMENO_1);
-                if (dm_broken_set(state, map)) {
+                if (dm_broken_set(state, map) || sticky_garbage_dequeue(state)) {
                     state->mode_now = dm_mode_ball_down;
                     var_s6 = false;
                 }
@@ -7865,22 +7842,10 @@ void key_control_main(struct_game_state_data *state, GameMapCell *map, s32 playe
             }
 
             cap = &state->now_cap;
-            
-            // Temporarily assign player 1 to updated rotate function and 
-            // other player(s) to original rotate function (for debugging)
-            if (get_player_index(state) == 0) {
-                if (joygam[player_no] & B_BUTTON) {
-                    rotate_capsel(map, cap, -1);
-                } else if (joygam[player_no] & A_BUTTON) {
-                    rotate_capsel(map, cap, 1);
-                }
-            }
-            else {
-                if (joygam[player_no] & B_BUTTON) {
-                    rotate_capsel_temp(map, cap, -1);
-                } else if (joygam[player_no] & A_BUTTON) {
-                    rotate_capsel_temp(map, cap, 1);
-                }
+            if (joygam[player_no] & B_BUTTON) {
+                rotate_capsel(map, cap, -1);
+            } else if (joygam[player_no] & A_BUTTON) {
+                rotate_capsel(map, cap, 1);
             }
 
             if (joygam[player_no] & L_JPAD) {
