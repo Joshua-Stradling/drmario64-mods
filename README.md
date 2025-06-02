@@ -1,137 +1,49 @@
-# Dr. Mario 64
+# Dr. Mario 64 Decompilation (Base Fork)
 
-[![Build Status]][actions]
-[![Code us Progress]](https://decomp.dev/AngheloAlf/drmario64/us)
-[![Code cn Progress]](https://decomp.dev/AngheloAlf/drmario64/cn)
-[![Code gw Progress]](https://decomp.dev/AngheloAlf/drmario64/gw)
+This branch is a matching decomp of Dr. Mario 64. No gameplay modifications have been added here. It is used as a base to build on in the other branches.
 
-[Build Status]: <https://github.com/AngheloAlf/drmario64/actions/workflows/ci.yml/badge.svg>
-[actions]: <https://github.com/AngheloAlf/drmario64/actions/workflows/ci.yml>
-[Code us Progress]: https://decomp.dev/AngheloAlf/drmario64/us.svg?mode=shield&label=us&measure=matched_code_percent
-[Code cn Progress]: https://decomp.dev/AngheloAlf/drmario64/cn.svg?mode=shield&label=us&measure=matched_code_percent
-[Code gw Progress]: https://decomp.dev/AngheloAlf/drmario64/gw.svg?mode=shield&label=us&measure=matched_code_percent
+### Based On
 
-Matching decomp of Dr. Mario 64
+This project builds on the [matching decomp of Dr. Mario 64](https://github.com/AngheloAlf/drmario64) by AngheloAlf. Please refer to their repository for additional information.
 
-[Progress graph :chart_with_upwards_trend:](https://decomp.dev/AngheloAlf/drmario64?mode=history)
+### Compatibility Note
 
-[Legacy progress graph :chart_with_upwards_trend:](https://angheloalf.github.io/drmario64/)
+Any modifications to the ROM will make it incompatible with certain emulator video plugins; this includes GLideN64 and Project64's default plugin. More accurate plugins like ParaLLEI-RDP seem to work fine (mods also seem to work well with flash cartridges running on the original console).
 
-## Dependencies
+## Quick Setup
 
-All the instructions assume the user is using a Debian/Ubuntu based Linux
-distro. If you are a Windows user then it is recommended to use WSL2 with
-Ubuntu.
+### System Dependencies
+Install the following packages (Ubuntu / WSL2 recommended):
 
-### System packages
-
-The build process has the following package requirements:
-
-* make
-* git
-* build-essential
-* clang
-* binutils-mips-linux-gnu
-* gcc-mips-linux-gnu
-* python3
-* pip3
-* venv
-* Rust
-
-Under Debian / Ubuntu (which we recommend using), you can install them with the following commands:
-
-```bash
+```
 sudo apt update
 sudo apt install make git build-essential clang binutils-mips-linux-gnu gcc-mips-linux-gnu python3 python3-pip python3-venv
 ```
 
-### Python dependencies
-
-First you'll need to create a virtual environment for the python packages:
-
-```bash
+### Python Environment
+```
 python3 -m venv .venv
-```
-
-To start using the virtual environment on your current terminal run:
-
-```bash
 source .venv/bin/activate
-```
-
-Take in mind for each new terminal you'll need to **active** the Python virtual
-environment again, there's no need to create the virtual environment again.
-
-Now you can install the Python dependencies, to do so run:
-
-```bash
 python3 -m pip install -U -r requirements.txt
 ```
 
-### Rust dependencies
-
-To install Rust run the following command and follow the on-screen instructions
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+### Rust and Extra Tools
 ```
-
-The following Rust programs are required by the build process:
-
-* pigment64
-
-To install those programs run the following commands:
-
-```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 cargo install pigment64 --version ">=0.3.0,<1.*"
 ```
 
-## Building
+## Build (Condensed)
+Copy your big-endian Dr Mario 64 ROM (renamed as `baserom.us.z64`) into the repository's `./config/us/` directory. Then run:
 
-Copy your big-endian Dr Mario 64 ROM into the repository's root directory and rename it to `baserom.us.z64`. Then run
-
-```bash
+```
 make setup
 make lib
 make extract
 make
 ```
 
-to download the appropriate compiler versions, build libultra, extract data from the rom using splat, and build the files back into a rom. If successful, the last line of output should say
-
-```bash
-build/us/drmario64.us.z64: OK
+If successful, the final ROM will be located at:
 ```
-
-### Other versions
-
-This repository supports for the iQue and the Gateway versions of this game too.
-
-To build any of this versions place your ROM in the root of the repo and rename it to `baserom.cn.z64` or `baserom.gw.z64`. Pass `VERSION=cn` or `VERSION=gw` to the above make commands.
-
-## Contributing
-
-TODO: write some contributing guidelines.
-
-Smaller efforts are appreciated. Just open a PR and try to address any review comments left by other contributors c:
-
-### Important note
-
-This matching decomp effort is being done leak-free. If you have looked/worked with leaked materials (i.e. gigaleak) then it's a shame but you can't contribute to this project.
-
-## License
-
-This repository is licensed under the [MIT license](LICENSE), except for
-
-* files which declare a different license, and
-* folders that have their own `LICENSE` file.
-
-In such cases that license takes precedence.
-
-In particular, the `src/` folder is licensed under the [CC0 license](src/LICENSE).
-
-### N.B.
-
-The intention of this project is to understand the inner workings of this game better, and to make it easier to modify its behaviour.
-
-As such, over and above the actual licensing of the repo, the decomp team requests that this codebase not be used to build binaries targeting non-MIPS machines ("porting").
+./build/us/drmario64.us.z64
+```
