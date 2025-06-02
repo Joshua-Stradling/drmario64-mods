@@ -4166,7 +4166,13 @@ s32 dm_game_main_cnt(struct_game_state_data *gameStateDataRef, GameMapCell *mapC
                         animeState_set(&gameStateDataRef->unk_094, 1);
                     }
 
-                    if (dm_broken_set(gameStateDataRef, mapCells)|| sticky_garbage_dequeue(gameStateDataRef)) {
+                    // Add regular garbage (if in queue), and add sticky 
+                    // garbage (if we haven't already added it to the upcoming 
+                    // capsule, and it is in queue)
+                    if (dm_broken_set(gameStateDataRef, mapCells) || 
+                        (!(gameStateDataRef->preview_capsule.piece_count > 2) 
+                        && sticky_garbage_dequeue(gameStateDataRef))) 
+                    {
                         animeState_set(&gameStateDataRef->unk_094, 2);
                         var_s6 = false;
                         gameStateDataRef->unk_00C = GAMESTATEDATA_UNK_00C_8;
