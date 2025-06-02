@@ -6,6 +6,10 @@ This branch is a matching decomp of Dr. Mario 64. No gameplay modifications have
 
 This project builds on the [matching decomp of Dr. Mario 64](https://github.com/AngheloAlf/drmario64) by AngheloAlf. Please refer to their repository for additional information.
 
+### Compatibility Note
+
+Any modifications to the ROM will make it incompatible with certain emulator video plugins; this includes GLideN64 and Project64's default plugin. More accurate plugins like ParaLLEI-RDP seem to work fine (mods also seem to work well with flash cartridges running on the original console).
+
 ## Quick Setup
 
 ### System Dependencies
