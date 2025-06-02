@@ -1,6 +1,19 @@
-# Dr. Mario 64 Decompilation (Base Fork)
+# Dr. Mario 64 Sticky Garbage Mod
 
-This branch is a matching decomp of Dr. Mario 64. No gameplay modifications have been added here. It is used as a base to build on in the other branches.
+This mod changes how garbage works in multiplayer gamemodes. In the original game, players can attack opponents by sending them garbage (single pieces falling in random columns onto the gamemap). Garbage is sent when a player clears more than one line at once (e.g. 2-line combos or more; combos must be cleared with a single capsule).
+
+In this version, AI players continue to receive normal garbage, but human players receive garbage attached to their upcoming capsule (which they can rotate and move around; the garbage will disconnect and fall from capsule once it has landed on the map).
+
+### Known Issues
+
+- Ghost capsule preview doesn't display sticky garbage additions
+- Bounding restrictions for sticky garbage fail when there are more than 2 garbages attached (default is maxed at 2 additional pieces)
+
+### Potential Improvements
+
+- Instead of only sending human players sticky garbage, send them a combination of regular garbage with sticky garbage
+- Add any queued garbage to the upcoming capsule before current capsule has landed
+- Combine queued attacks from multiple players
 
 ### Based On
 
