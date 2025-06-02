@@ -6,14 +6,16 @@ The goal of this mod is to allow players to **start at higher levels**:
 
 ## Known Errors
 
-- This mod **does not run properly on certain emulators** such as Project64 (there are visual glitches such as the capsules being invisible). However, it **does run on cen64 and the original N64** (if you have a flash cartridge). It likely requires accurate emulation (rather than taking shortcuts that work for the original, but not modified versions such as this).
 - As the level gauge is extended to go up to 23, it **overlaps the "HARD" text** to the right of the gauge.
 - In the 1 player classic mode level selector, there is an **incomplete preview** of the number of viruses for levels 22 and 23.
-
 
 ### Based On
 
 This project builds on the [matching decomp of Dr. Mario 64](https://github.com/AngheloAlf/drmario64) by AngheloAlf. Please refer to their repository for additional information.
+
+### Compatibility Note
+
+Any modifications to the ROM will make it incompatible with certain emulator video plugins; this includes GLideN64 and Project64's default plugin. More accurate plugins like ParaLLEI-RDP seem to work fine (mods also seem to work well with flash cartridges running on the original console).
 
 ## Quick Setup
 
