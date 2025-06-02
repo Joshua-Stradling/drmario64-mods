@@ -4658,7 +4658,13 @@ DmMainCnt dm_game_main_cnt(struct_game_state_data *state, GameMapCell *map, s32 
                         animeState_set(&state->anime, ANIMENO_1);
                     }
 
-                    if (dm_broken_set(state, map)|| sticky_garbage_dequeue(state)) {
+                    // Add regular garbage (if in queue), and add sticky 
+                    // garbage (if we haven't already added it to the upcoming 
+                    // capsule, and it is in queue)
+                    if (dm_broken_set(state, map) || 
+                        (!(state->next_cap.piece_count > 2) 
+                        && sticky_garbage_dequeue(state))) 
+                    {
                         animeState_set(&state->anime, ANIMENO_2);
                         var_s6 = false;
                         state->mode_now = dm_mode_ball_down;
