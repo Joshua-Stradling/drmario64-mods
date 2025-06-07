@@ -159,6 +159,8 @@ typedef struct struct_game_state_data_unk_140 {
 } struct_game_state_data_unk_140; // size = 0x24
 
 #define MAX_CAPSULE_SIZE 4
+#define MAX_STICKY_GARBAGE (MAX_CAPSULE_SIZE - 2)
+#define MAX_GARBAGE 4
 
 // First 2 indexes are a connected domino, any additional are garbage 
 // that will fall independently after the capsule lands.
@@ -181,16 +183,6 @@ typedef struct ValidPoint {
     s8 x, y;
     bool is_valid;
 } ValidPoint;
-
-#define NUM_OF_STICKY_SLOTS 16
-#define MAX_STICKY_GARBAGE (MAX_CAPSULE_SIZE - 2)
-#define MAX_REGULAR_GARBAGE 4
-
-typedef struct StickyGarbageSlot {
-    /* 0x0 */ u8 garbage_colors[MAX_STICKY_GARBAGE]; // 1–3, each representing a pill color
-    /* 0x2 */ u8 sender_index; // Who sent this garbage
-    /* 0x3 */ u8 garbage_count; // 1–2 (0 means slot is unused)
-} StickyGarbageSlot; // size = 0x4
 
 typedef struct struct_game_state_data_unk_050 {
     /* 0x0 */ u16 unk_0;
@@ -361,8 +353,7 @@ typedef struct struct_game_state_data {
     /* 0x3D2 */ u8 unk_3C0;
     /* 0x3D3 */ u8 unk_3C1;
     /* 0x3D4 */ UNK_TYPE1 unk_3C2[0x2];
-    /* 0x3D6 */ StickyGarbageSlot sticky_garbage_queue[NUM_OF_STICKY_SLOTS];
-} struct_game_state_data; // updated size = 0x3C4 + ((0x14 - 0xB) * 2) + (0x4 * 16) = 0x416
+} struct_game_state_data; // updated size = 0x3C4 + ((0x14 - 0xB) * 2) = 0x3D6
 
 // GameStateBackup?
 typedef struct struct_gameBackup {
@@ -384,7 +375,6 @@ int check_left_wall(GameMapCell *mapCells, Capsule *capsule, int offset);
 int check_bottom(GameMapCell *mapCells, Capsule *capsule, int offset);
 int check_top(GameMapCell *mapCells, Capsule *capsule, int offset);
 void reset_chain_data(struct_game_state_data *gameStateData);
-bool sticky_garbage_dequeue(struct_game_state_data *gameStateData);
 bool is_piece_unstable(Capsule *capsule, u8 garbage_index, GameMapCell *mapCells);
 bool is_player_ai(u8 player_index);
 void update_team_stock(struct_game_state_data *attacker, s32 teammate_bitmask);

@@ -7,13 +7,6 @@ In this version, AI players continue to receive normal garbage, but human player
 ### Known Issues
 
 - Ghost capsule preview doesn't display sticky garbage additions
-- Bounding restrictions for sticky garbage fail when there are more than 2 garbages attached (default is maxed at 2 additional pieces)
-
-### Potential Improvements
-
-- Instead of only sending human players sticky garbage, send them a combination of regular garbage with sticky garbage
-- Add any queued garbage to the upcoming capsule before current capsule has landed
-- Combine queued attacks from multiple players
 
 ### Based On
 
