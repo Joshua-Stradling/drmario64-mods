@@ -1891,40 +1891,6 @@ bool dm_broken_set(struct_game_state_data *state, GameMapCell *map) {
     return ret;
 }
 
-// Sticky garbage equivalent of dm_broken_set()
-bool sticky_garbage_dequeue(struct_game_state_data *gameStateData) {
-    StickyGarbageSlot current_slot = gameStateData->sticky_garbage_queue[0];
-
-    // Add garbage to capsule if there is garbage in the first slot of the queue 
-    if (current_slot.garbage_count != 0) {
-        u8 i;
-        u8 j;
-        StickyGarbageSlot empty = {0};
-
-        // Copy of queue (so we can shift it over when done)
-        StickyGarbageSlot copy[NUM_OF_STICKY_SLOTS];
-
-        reset_chain_data(gameStateData);
-
-        // Add garbage from queue to upcoming capsule
-        add_garbage_to_capsule(&gameStateData->next_cap, current_slot.garbage_colors, current_slot.garbage_count);
-
-        // Copy and clear sticky queue
-        for (i = 0; i < NUM_OF_STICKY_SLOTS; i++) {
-            copy[i] = gameStateData->sticky_garbage_queue[i];
-            gameStateData->sticky_garbage_queue[i] = empty;
-        }
-
-        // Shift queue over one using copy
-        for (i = 0, j = 1; j < NUM_OF_STICKY_SLOTS; i++, j++) {
-            gameStateData->sticky_garbage_queue[i] = copy[j];
-        }
-        
-        return true;
-    }
-    return false;
-}
-
 typedef struct dm_calc_erase_score_pos_arg2 {
     /* 0x0 */ s32 x;
     /* 0x4 */ s32 y;
@@ -2926,10 +2892,12 @@ s32 dm_make_attack_pattern(u32 max) {
 
     if (max >= 4) {
         pattern = 0x55 << random(2);
-    } else if (max >= 3) {
+    } else if (max == 3) {
         pattern = 0x15 << random(4);
-    } else if (max >= 2) {
+    } else if (max == 2) {
         pattern = 0x11 << random(4);
+    } else if (max == 1) {
+        pattern = 0x1 << random(8);
     }
     return pattern;
 }
@@ -3068,11 +3036,60 @@ void add_random_colors(struct_game_state_data *attacker, s32 colors[3], s32 garb
     }
 }
 
+// Adds sticky garbage to receiver's preview capsule. Returns remaining garbage 
+// that needs to be added to queue
+s32 add_sticky_garbage(struct_game_state_data *attacker, struct_game_state_data *receiver, s32 garbage_count) {
+    u8 i;
+    s8 sticky_garbage_colors[3] = {0};
+    s8 piece_count = receiver->next_cap.piece_count;
+
+    // Send 2 pieces of sticky garbage if attacker has cleared at least a 
+    // 3-line combo
+    u8 sticky_garbage_count = 1;
+    if (attacker->chain_line >= 3U) {
+        sticky_garbage_count = 2;
+    }
+
+    // Don't add more sticky garbage than the capsule has room for
+    if (piece_count + sticky_garbage_count > MAX_CAPSULE_SIZE) {
+        sticky_garbage_count = MAX_CAPSULE_SIZE - piece_count;
+    }
+
+    // If there is more sticky garbage to add, add it (as long as capsule 
+    // has more room)
+    for (i = 0; i < sticky_garbage_count; i++) {
+
+        // Add a random color to capsule (loop until found one available)
+        while ((attacker->chain_color[0] != 0) || (attacker->chain_color[1] != 0) || (attacker->chain_color[2] != 0)) {
+            u8 color = random(3);
+
+            // If that color was cleared, pop it off and add it to 
+            // opponent's garbage slot
+            if (attacker->chain_color[color] != 0) {
+                attacker->chain_color[color]--;
+                sticky_garbage_colors[color]++;
+                break;
+            }
+        }
+        garbage_count--;
+    }
+    add_garbage_to_capsule(&receiver->next_cap, sticky_garbage_colors, sticky_garbage_count);
+    
+    return garbage_count;
+}
+
 /**
  * Original name: dm_set_attack_2p
  */
 s32 dm_set_attack_2p(struct_game_state_data *attacker) {
     struct_game_state_data *receiver;
+    s32 column_index;
+
+    // 8-bit bitmask of the columns that already have garbage in them
+    s32 garbage_columns = 0;
+
+    // Calculate how many garbage pieces
+    s32 garbage_count = MIN(MAX_GARBAGE, attacker->chain_line);
 
 #if 0
     int x; // r5
@@ -3088,137 +3105,96 @@ s32 dm_set_attack_2p(struct_game_state_data *attacker) {
     // Get the opponents game struct
     receiver = &game_state_data[attacker->player_no ^ 1];
 
-    // Send regular garbage if the receiver is an AI player
-    if (is_player_ai(receiver->player_no)) {
-        s32 column_index;
+    // If the receiver is a human player, add sticky garbage first
+    if (!(is_player_ai(receiver->player_no))) {
+        garbage_count = add_sticky_garbage(attacker, receiver, garbage_count);
+    }
 
-        // Calculate how many garbage pieces to drop
-        s32 regular_garbage_count = MIN(4, attacker->chain_line);
+    // If there is existing garbage queued for opponent, add garbage 
+    // in same-parity groups (if existing garbage is in even columns, 
+    // add in even columns that aren't filled)
+    if (receiver->cap_attack_work[0].unk_0 != 0) {
 
-        // 8-bit bitmask of the columns that already have garbage in them
-        s32 garbage_columns = 0;
+        // Whether the existing garbage is in odd or even columns
+        s32 parity_group;
 
-        // If there is existing garbage queued for opponent, add garbage 
-        // in same-parity groups (if existing garbage is in even columns, 
-        // add in even columns that aren't filled)
-        if (receiver->cap_attack_work[0].unk_0 != 0) {
+        // Iterate over each column
+        for (column_index = 0; column_index < 8; column_index++) {
+            
+            // Shift column by a bit, effectively doubling it (and 
+            // enabling 8 column numbers to be used on a 16-bit 
+            // bitfield with each column having 2 bits)
+            int double_column = column_index << 1;
 
-            // Whether the existing garbage is in odd or even columns
-            s32 parity_group;
+            // Create a mask that is moved over to match the 
+            // appropriate column in the bitfield (3 == 0b11)
+            int mask = 3 << double_column;
 
-            // Iterate over each column
-            for (column_index = 0; column_index < 8; column_index++) {
-                
-                // Shift column by a bit, effectively doubling it (and 
-                // enabling 8 column numbers to be used on a 16-bit 
-                // bitfield with each column having 2 bits)
-                int double_column = column_index << 1;
+            // Check if there is garbage that matches the 
+            // appropriate column of the bitmask
+            if (receiver->cap_attack_work[0].unk_0 & mask) {
 
-                // Create a mask that is moved over to match the 
-                // appropriate column in the bitfield (3 == 0b11)
-                int mask = 3 << double_column;
+                // Create 8-bit bitmask of the columns that already 
+                // have garbage in them
+                garbage_columns |= 1 << column_index;
 
-                // Check if there is garbage that matches the 
-                // appropriate column of the bitmask
-                if (receiver->cap_attack_work[0].unk_0 & mask) {
-
-                    // Create 8-bit bitmask of the columns that already 
-                    // have garbage in them
-                    garbage_columns |= 1 << column_index;
-
-                    // Determine whether the columns with garbage in 
-                    // them are odd or even
-                    parity_group = column_index & 1;
-                }
+                // Determine whether the columns with garbage in 
+                // them are odd or even
+                parity_group = column_index & 1;
             }
+        }
 
-            // In each column of the same-parity group, set to 1 if no 
-            // garbage is occupying it (available), otherwise, set it 
-            // to 0 (unavailable)
-            for (column_index = 0; column_index < 8; column_index++) {
+        // In each column of the same-parity group, set to 1 if no 
+        // garbage is occupying it (available), otherwise, set it 
+        // to 0 (unavailable)
+        for (column_index = 0; column_index < 8; column_index++) {
 
-                // Continue if the column has the same parity (even or 
-                // odd) to the columns that already have garbage in them
-                if ((column_index & 1) == parity_group) {
+            // Continue if the column has the same parity (even or 
+            // odd) to the columns that already have garbage in them
+            if ((column_index & 1) == parity_group) {
 
-                    // If the column has garbage in it, set it to 0 
-                    // (unavailable). Otherwise, set it to 1 (available)
-                    garbage_columns ^= 1 << column_index;
-                }
+                // If the column has garbage in it, set it to 0 
+                // (unavailable). Otherwise, set it to 1 (available)
+                garbage_columns ^= 1 << column_index;
             }
+        }
 
-            // If there are no more available columns in the same-parity 
-            // group, don't add more rain, but return that rain was 
-            // successful (just couldn't be added because it was maxed out)
-            if (garbage_columns == 0) return 1;
-        }
-        
-        // If there isn't existing garbage, calculate random 
-        // evenly-spaced columns to put new garbage in
-        else {
-            garbage_columns = dm_make_attack_pattern(regular_garbage_count);
-        }
+        // If there are no more available columns in the same-parity 
+        // group, don't add more rain (return was successful, just couldn't be 
+        // added because it was maxed out)
+        if (garbage_columns == 0) return 1;
+    }
+    
+    // If there isn't existing garbage, calculate random 
+    // evenly-spaced columns to put new garbage in
+    else {
+        garbage_columns = dm_make_attack_pattern(garbage_count);
+    }
 
         // Mark who sent garbage
         receiver->cap_attack_work[0].unk_2 = attacker->player_no;
 
-        // Set new garbage in bitfield (put colors in random available columns)
-        for (column_index = 0; column_index < 8; column_index++) {
-            if (!((garbage_columns >> column_index) & 1)) {
-                continue;
-            }
-
-            // Add a random color to this column (loop until found one available)
-            while ((attacker->chain_color[0] != 0) || (attacker->chain_color[1] != 0) ||
-                (attacker->chain_color[2] != 0)) {
-                
-                // Get random color
-                u8 color = random(3);
-
-                // If that color was cleared, pop it of and add it to 
-                // opponent's garbage slot
-                if (attacker->chain_color[color] != 0) {
-                    attacker->chain_color[color]--;
-                    receiver->cap_attack_work[0].unk_0 |= (color + 1) << (column_index << 1);
-                    break;
-                }
-            }
-        }
-    }
-
-    // If the receiver is a human player, send sticky garbage
-    else {
-        u8 i;
-
-        // Which slot to add garbage to
-        StickyGarbageSlot *slot = &receiver->sticky_garbage_queue[0];
-
-        // How many pieces of sticky garbage to send
-        u8 sticky_garbage_count = MIN(MIN(MAX_STICKY_GARBAGE, attacker->chain_line - 1), MAX_STICKY_GARBAGE - slot->garbage_count);
-
-        // Mark who sent garbage
-        slot->sender_index = attacker->player_no;
-
-        for (i = 0; i < sticky_garbage_count; i++) {
-
-            // Add a random color to the slot (loop until found one available)
-            while ((attacker->chain_color[0] != 0) || (attacker->chain_color[1] != 0) ||
-                (attacker->chain_color[2] != 0)) {
-                
-                u8 color = random(3);
-
-                // If that color was cleared, pop it of and add it to 
-                // opponent's garbage slot
-                if (attacker->chain_color[color] != 0) {
-                    attacker->chain_color[color]--;
-                    slot->garbage_colors[color]++;
-                    break;
-                }
-            }
+    // Set new garbage in bitfield (put colors in random available columns)
+    for (column_index = 0; column_index < 8; column_index++) {
+        if (!((garbage_columns >> column_index) & 1)) {
+            continue;
         }
 
-        // Update garbage count after attack has been queued
-        slot->garbage_count += sticky_garbage_count;
+        // Add a random color to this column (loop until found one available)
+        while ((attacker->chain_color[0] != 0) || (attacker->chain_color[1] != 0) ||
+            (attacker->chain_color[2] != 0)) {
+            
+            // Get random color
+            u8 color = random(3);
+
+            // If that color was cleared, pop it of and add it to 
+            // opponent's garbage slot
+            if (attacker->chain_color[color] != 0) {
+                attacker->chain_color[color]--;
+                receiver->cap_attack_work[0].unk_0 |= (color + 1) << (column_index << 1);
+                break;
+            }
+        }
     }
 
     // Return that attack was successful
@@ -3282,34 +3258,15 @@ s32 dm_set_attack_4p(struct_game_state_data *attacker) {
 
     // Continue if we are sending garbage to opponent(s)
     if (opponent_bitmask) {
-        
-        // How many pieces of sticky garbage to send (if attacker targetted a human player)
-        s32 sticky_garbage_count = MIN(MAX_STICKY_GARBAGE, attacker->chain_line - 1);
 
-        // How many pieces of regular garbage to send (if attacker targetted an AI player)
-        s32 regular_garbage_count = MIN(MAX_REGULAR_GARBAGE, attacker->chain_line);
-
-        // If any of our opponents are AI, pop more from stock (because AI players 
-        // receive regular garbage, we need to pop more from stock; sticky 
-        // garbage has a limit of 2, but regular garbage has a limit of 4)
-        for (i = 3; i >= 0; i--) {
-            
-            // If this player is one we targetted, and is AI, pop from stock
-            if (((opponent_bitmask >> i) & 1) && is_player_ai(i)) {
-                s32 updated_garbage_count = pop_from_stock(attacker, regular_garbage_count, MAX_REGULAR_GARBAGE);
-                s32 garbage_count_increase = updated_garbage_count - regular_garbage_count;
-
-                regular_garbage_count = updated_garbage_count;
-                sticky_garbage_count = MIN(MAX_STICKY_GARBAGE, sticky_garbage_count + garbage_count_increase);
-                break;
-            }
-        }
-
-        // If sticky garbage limit hasn't already been filled, pop more from stock
-        sticky_garbage_count = pop_from_stock(attacker, sticky_garbage_count, MAX_STICKY_GARBAGE);
+        // How many pieces of total garbage to send (update with any stock if 
+        // that is available)
+        s32 garbage_count = MIN(MAX_GARBAGE, attacker->chain_line);
+        garbage_count = pop_from_stock(attacker, garbage_count, MAX_GARBAGE);
 
         // Loop over all players, and add garbage to opponent(s) we selected
         for (i = 0; i < 4; i++) {
+            u8 slot_index;
             
             // Colors chosen to represent from combos cleared
             s32 colors[3] = {0};
@@ -3329,123 +3286,57 @@ s32 dm_set_attack_4p(struct_game_state_data *attacker) {
                             _posP4CharBase[receiver->player_no][1]
             );
 
-            // Add normal garbage to AI player's queue
-            if (is_player_ai(i)) {
-
-                // Add garbage to the first available slot (out of 16, so 
-                // multiple attacks can be queued on one person)
-                u8 slot_index;
-                for (slot_index = 0; slot_index < 16; slot_index++) {
-
-                    // Attack pattern 8-bit bitmask
-                    s32 attack_bitmask;
-
-                    // If this slot is filled, go to the next one
-                    if (receiver->cap_attack_work[slot_index].unk_0 != 0) {
-                        continue;
-                    }
-
-                    // Randomly select colors to use in garbage from combos-cleared
-                    add_random_colors(attacker, colors, regular_garbage_count);
-
-                    // Get random attack pattern 8-bit bitmask (for each column)
-                    attack_bitmask = dm_make_attack_pattern(regular_garbage_count);
-
-                    // Mark which player sent the garbage in receiving player's slot
-                    receiver->cap_attack_work[slot_index].unk_2 = attacker->player_no;
-
-                    // Loop over each column to potentially add garbage
-                    for (j = 0; j < 8; j++) {
-
-                        // If this column isn't selected in the bitmask, skip it
-                        if (!((attack_bitmask >> j) & 1)) continue;
-
-                        // Add a random color to this column (loop until found 
-                        // one that's available)
-                        while ((colors[0] + colors[1] + colors[2]) > 0) {
-                            
-                            // Get random color
-                            u8 color = random(3);
-
-                            // Continue if that color is available
-                            if (colors[color] > 0) {
-
-                                // Update garbage colors array and the 
-                                // opponent's slot bitmask
-                                colors[color]--;
-                                receiver->cap_attack_work[slot_index].unk_0 |= (color + 1) << (j * 2);
-                                break;
-                            }
-                        }
-                    }
-                    break;
-                }
+            // Add sticky garbage to human player's capsule
+            if (!(is_player_ai(i))) {
+                garbage_count = add_sticky_garbage(attacker, receiver, garbage_count);
             }
 
-            // Add sticky garbage to human player's queue
-            else {
+            // Add remainder garbage as regular garbage to the first available 
+            // slot (out of 16, so multiple attacks can be queued on one person)
+            for (slot_index = 0; slot_index < 16; slot_index++) {
 
-                // Index of how much garbage was added so far
-                u8 garbage_added;
+                // Attack pattern 8-bit bitmask
+                s32 attack_bitmask;
 
-                // Which slot to add garbage to
-                StickyGarbageSlot *slot = 0;
-
-                // Calculate which slot to add garbage to (either adding to 
-                // one previously queued by attacker, or starting new slot)
-                for (j = 0; j < NUM_OF_STICKY_SLOTS; j++) {
-                    StickyGarbageSlot *current_slot = &receiver->sticky_garbage_queue[j];
-                    
-                    // If slot is occupied, check to see if we can still add 
-                    // more garbage to it
-                    if (current_slot->garbage_count != 0) {
-
-                        // Only add garbage to slot if the current attacker 
-                        // was the one who set it, and if it wouldn't exceed 
-                        // the garbage limit
-                        if ((current_slot->sender_index == attacker->player_no) &&
-                            (current_slot->garbage_count + sticky_garbage_count <= MAX_STICKY_GARBAGE)
-                        ) {
-                            slot = current_slot;
-                            break;
-                        }
-                    }
-
-                    // If the spot is empty, use it
-                    else {
-                        
-                        // Update the slot to record that it is being set by 
-                        // this attacker
-                        current_slot->sender_index = attacker->player_no;
-                        
-                        slot = current_slot;
-                        break;
-                    }
+                // If this slot is filled, go to the next one
+                if (receiver->cap_attack_work[slot_index].unk_0 != 0) {
+                    continue;
                 }
 
-                // If an availabe slot could not be found, skip this player
-                if (slot == 0) continue;
-
                 // Randomly select colors to use in garbage from combos-cleared
-                add_random_colors(attacker, colors, sticky_garbage_count);
+                add_random_colors(attacker, colors, garbage_count);
 
-                // Add each new garbage piece to the slot
-                for (garbage_added = 0; garbage_added < sticky_garbage_count; garbage_added++) {
-                    
+                // Get random attack pattern 8-bit bitmask (for each column)
+                attack_bitmask = dm_make_attack_pattern(garbage_count);
+
+                // Mark which player sent the garbage in receiving player's slot
+                receiver->cap_attack_work[slot_index].unk_2 = attacker->player_no;
+
+                // Loop over each column to potentially add garbage
+                for (j = 0; j < 8; j++) {
+
+                    // If this column isn't selected in the bitmask, skip it
+                    if (!((attack_bitmask >> j) & 1)) continue;
+
                     // Add a random color to this column (loop until found 
                     // one that's available)
                     while ((colors[0] + colors[1] + colors[2]) > 0) {
+                        
+                        // Get random color
                         u8 color = random(3);
+
+                        // Continue if that color is available
                         if (colors[color] > 0) {
+
+                            // Update garbage colors array and the 
+                            // opponent's slot bitmask
                             colors[color]--;
-                            slot->garbage_colors[garbage_added] = color;
+                            receiver->cap_attack_work[slot_index].unk_0 |= (color + 1) << (j * 2);
                             break;
                         }
                     }
                 }
-
-                // Update garbage count in slot
-                slot->garbage_count = sticky_garbage_count;
+                break;
             }
         }
     }
@@ -4636,8 +4527,7 @@ DmMainCnt dm_game_main_cnt(struct_game_state_data *state, GameMapCell *map, s32 
                         if (i != 0) {
                             animeState_set(&state->anime, ANIMENO_1);
                         }
-
-                        if (dm_broken_set(state, map) || sticky_garbage_dequeue(state)) {
+                        if (dm_broken_set(state, map)) {
                             animeState_set(&state->anime, ANIMENO_2);
                             var_s6 = false;
                             dm_snd_play_in_game(_charSE_tbl[state->charNo] + 3);
@@ -4657,14 +4547,7 @@ DmMainCnt dm_game_main_cnt(struct_game_state_data *state, GameMapCell *map, s32 
                     if (i != 0) {
                         animeState_set(&state->anime, ANIMENO_1);
                     }
-
-                    // Add regular garbage (if in queue), and add sticky 
-                    // garbage (if we haven't already added it to the upcoming 
-                    // capsule, and it is in queue)
-                    if (dm_broken_set(state, map) || 
-                        (!(state->next_cap.piece_count > 2) 
-                        && sticky_garbage_dequeue(state))) 
-                    {
+                    if (dm_broken_set(state, map)) {
                         animeState_set(&state->anime, ANIMENO_2);
                         var_s6 = false;
                         state->mode_now = dm_mode_ball_down;
@@ -4862,7 +4745,7 @@ DmMainCnt dm_game_main_cnt(struct_game_state_data *state, GameMapCell *map, s32 
                 dm_attack_se(state, player_no);
                 dm_set_attack_4p(state);
                 animeState_set(&state->anime, ANIMENO_1);
-                if (dm_broken_set(state, map) || sticky_garbage_dequeue(state)) {
+                if (dm_broken_set(state, map)) {
                     state->mode_now = dm_mode_ball_down;
                     var_s6 = false;
                 }
@@ -4926,13 +4809,27 @@ u8 get_player_index(struct_game_state_data *current_game_state) {
 
 void add_garbage_to_capsule(Capsule *capsule, s8 garbage_colors[], u8 num_of_garbage) {
     u8 i;
+    s8 piece_count = capsule->piece_count;
     
     // Add each garbage piece individually
     for (i = 0; i < num_of_garbage; i++) {
-        u8 garbage_index = i + 2;
-        s8 piece_color = garbage_colors[i];
+        u8 garbage_index = i + piece_count;
         Point new_point = new_piece(capsule);
+        s8 piece_color;
 
+        // Pop random color for current piece (loop until found one available)
+        while ((garbage_colors[0] != 0) || (garbage_colors[1] != 0) || (garbage_colors[2] != 0)) {
+            u8 color = random(3);
+
+            // If that color was cleared, pop it off and add it to 
+            // opponent's garbage slot
+            if (garbage_colors[color] != 0) {
+                garbage_colors[color]--;
+                piece_color = color;
+                break;
+            }
+        }
+        
         capsule->pos_x[garbage_index] = new_point.x;
         capsule->pos_y[garbage_index] = new_point.y;
         capsule->sprite_index[garbage_index] = 4; // single unattached block texture
@@ -8007,7 +7904,6 @@ void dm_game_init(bool reinit) {
     s32 k;
     struct_game_state_data *temp_s0_3;
     struct_game_state_data *var_s0_2;
-    StickyGarbageSlot empty_slot = {0};
 
     if (!reinit || !st->replayFlag) {
         st->replayFlag = 0;
@@ -8222,11 +8118,6 @@ void dm_game_init(bool reinit) {
         for (j = 0; j < ARRAY_COUNT(temp_s0_3->cap_attack_work); j++) {
             temp_s0_3->cap_attack_work[j].unk_0 = 0;
             temp_s0_3->cap_attack_work[j].unk_2 = 0;
-        }
-
-        // Clear sticky garbage queue (for modded garbage system)
-        for (j = 0; j < NUM_OF_STICKY_SLOTS; j++) {
-            temp_s0_3->sticky_garbage_queue[j] = empty_slot;
         }
 
         init_map_all(game_map_data[i]);
