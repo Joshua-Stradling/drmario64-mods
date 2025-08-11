@@ -1,6 +1,6 @@
-# Dr. Mario 64 Decompilation (Base Fork)
+# Dr. Mario 64 NES Mechanics Mod
 
-This branch is a matching decomp of Dr. Mario 64. No gameplay modifications have been added here. It is used as a base to build on in the other branches.
+This mod changes the speed and timing of the capsules to be more consistent with the NES version of Dr. Mario.
 
 ### Based On
 

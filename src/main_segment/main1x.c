@@ -124,34 +124,30 @@ u32 evs_high_score = 0;
  */
 s32 evs_vs_count = 3;
 
-/**
- * Original name: FlyingCnt
- */
-u8 FlyingCnt[3] = { 0x28, 0x14, 0x14 };
+// Updated index 2 from 20 to 14; high speed capsules will enter faster
+u8 FlyingCnt[3] = { 40, 20, 14 };
 
-/**
- * Original name: BonusWait
- */
-u8 BonusWait[][3] = {
-    { 2, 2, 3 },
-    { 1, 1, 1 },
-    { 1, 0, 1 },
-};
+// Removed bonus wait at top of capsule
+// /**
+//  * Original name: BonusWait
+//  */
+// u8 BonusWait[][3] = {
+//     { 2, 2, 3 },
+//     { 1, 1, 1 },
+//     { 1, 0, 1 },
+// };
 
 u8 D_8008842C[] = { 0x01, 0x02, 0x02, 0x02 };
 
-/**
- * Original name: GameSpeed
- */
-s8 GameSpeed[] = { 0, 0xA, 0xF, 0x37 };
+// Updated index 2 from 15 to 16 (to match NES values)
+s8 GameSpeed[] = { 0, 10, 16, 55 };
 
-/**
- * Original name: FallSpeed
- */
-u8 FallSpeed[0x38] = {
-    0x27, 0x25, 0x23, 0x21, 0x1F, 0x1D, 0x1B, 0x19, 0x17, 0x15, 0x13, 0x12, 0x11, 0x10, 0xF, 0xE, 0xD, 0xC, 0xB,
-    0xA,  9,    9,    8,    8,    7,    7,    6,    6,    5,    5,    5,    5,    5,    5,   5,   5,   5,   5,
-    5,    5,    4,    4,    4,    4,    4,    3,    3,    3,    3,    3,    2,    2,    2,   2,   2,   1,
+// Updated table to match NES values (and added 1)
+u8 FallSpeed[66] = {
+    40,  38,   36,   34,   32,   30,   28,   26,   24,   22,   20,   19,   18,   17,   16,   15,   14,   13,   12,
+    11,  10,   10,    9,    9,    8,    8,    7,    7,    6,    6,    6,    6,    6,    6,    6,    6,    6,    6,
+    6,    6,    5,    5,    5,    5,    5,    4,    4,    4,    4,    4,    3,    3,    3,    3,    3,    2,    2,
+    2,    2,    2,    2,    2,    2,    2,    2,    1
 };
 
 /**
