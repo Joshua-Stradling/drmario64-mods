@@ -2752,7 +2752,6 @@ static_assert(ARRAY_COUNT(black_color_1384) == 2, "indexed by bool");
  */
 void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
     Capsule *capsule = &state->now_cap;
-    s8 deepest_y;
     s32 current_fall_delay;
     s32 speed_delay;
     s8 i;
@@ -2761,35 +2760,37 @@ void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
     if (capsule->pos_y[0] > 0) {
         current_fall_delay = FallSpeed[state->cap_speed];
 
-        // Add delay if all of the capsule is above y=4. Index 1 is 
-        // never deeper than index 0 because of rotational logic.
-        deepest_y = capsule->pos_y[0];
-        i = 2;
-        while (deepest_y < 4 && i < capsule->piece_count) {
-            if (capsule->pos_y[i] > deepest_y) {
-                deepest_y = capsule->pos_y[i];
-            }
-            i++;
-        }
-        if (deepest_y < 4) {
-            current_fall_delay += BonusWait[deepest_y - 1][state->cap_def_speed];
-        }
+        // Remove bonus wait at top of bottle
+        // // Add delay if all of the capsule is above y=4. Index 1 is 
+        // // never deeper than index 0 because of rotational logic.
+        // deepest_y = capsule->pos_y[0];
+        // i = 2;
+        // while (deepest_y < 4 && i < capsule->piece_count) {
+        //     if (capsule->pos_y[i] > deepest_y) {
+        //         deepest_y = capsule->pos_y[i];
+        //     }
+        //     i++;
+        // }
+        // if (deepest_y < 4) {
+        //     current_fall_delay += BonusWait[deepest_y - 1][state->cap_def_speed];
+        // }
 
-        // Add delay if any given part of capsule is blocked
+        // Remove touchdown wait
         speed_delay = 0;
-        for (i = 0; i < capsule->piece_count; i++) {
-            if (get_map_info(map, capsule->pos_x[i], capsule->pos_y[i] + 1) != 0) {
-                speed_delay = watchGame->touch_down_wait;
-                break;
-            }
-        }
+        // // Add delay if any given part of capsule is blocked
+        // for (i = 0; i < capsule->piece_count; i++) {
+        //     if (get_map_info(map, capsule->pos_x[i], capsule->pos_y[i] + 1) != 0) {
+        //         speed_delay = watchGame->touch_down_wait;
+        //         break;
+        //     }
+        // }
         
         state->cap_speed_max = current_fall_delay + speed_delay;
     }
     
-    // If capsule hasn't dropped, continue at a constant rate
+    // Update delay from 30 frames to variable depending on speed
     else {
-        state->cap_speed_max = 30;
+        state->cap_speed_max = FlyingCnt[state->cap_def_speed];
     }
 
     // If not enough gravity has taken effect, don't drop the capsule this frame
@@ -4751,7 +4752,9 @@ DmMainCnt dm_game_main_cnt(struct_game_state_data *state, GameMapCell *map, s32 
             state->cap_speed_vec = 1;
             state->cap_magazine_cnt = 1;
             state->cap_speed_count = 0;
-            state->cap_count = 0;
+
+            // Start capsule counter at 2 instead of 0 (so first speed increment is after 8 capsules)
+            state->cap_count = 2;
             dm_set_capsel(state);
             state->erase_anime = 0;
             state->erase_anime_count = 0;
@@ -8142,7 +8145,9 @@ void dm_game_init(bool reinit) {
         temp_s0_3->cap_speed_max = 0;
         temp_s0_3->cap_speed_vec = 1;
         temp_s0_3->cap_magazine_cnt = 1;
-        temp_s0_3->cap_count = 0;
+
+        // Start capsule counter at 2 instead of 0 (so first speed increment is after 8 capsules)
+        temp_s0_3->cap_count = 2;
         temp_s0_3->cap_speed_count = 0;
         temp_s0_3->cap_move_se_flg = false;
 
