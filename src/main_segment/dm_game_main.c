@@ -1913,16 +1913,24 @@ void dm_capsel_down(struct_game_state_data *gameStateData, GameMapCell *mapCells
 
     if (temp_s2->unk_2[0] > 0) {
         var_s0_2 = FallSpeed[gameStateData->unk_02D];
-        if ((temp_s2->unk_2[0] < 4) && (temp_s2->unk_2[0] > 0)) {
-            var_s0_2 += BonusWait[temp_s2->unk_2[0] - 1][gameStateData->unk_02C];
-        }
+
+        // Remove bonus wait at top of bottle
+        // if ((temp_s2->unk_2[0] < 4) && (temp_s2->unk_2[0] > 0)) {
+        //     var_s0_2 += BonusWait[temp_s2->unk_2[0] - 1][gameStateData->unk_02C];
+        // }
+
+        // Remove touchdown wait
         var_s1_2 = 0;
-        if (get_map_info(mapCells, gameStateData->unk_178.unk_0[0], temp_s2->unk_2[0] + 1) != 0) {
-            var_s1_2 = watchGameP->unk_898;
-        }
+        // if (get_map_info(mapCells, gameStateData->unk_178.unk_0[0], temp_s2->unk_2[0] + 1) != 0) {
+        //     var_s1_2 = watchGameP->unk_898;
+        // }
+        
         gameStateData->unk_031 = var_s0_2 + var_s1_2;
-    } else {
-        gameStateData->unk_031 = 0x1E;
+    }
+    
+    // Update delay from 30 frames to variable depending on speed
+    else {
+        gameStateData->unk_031 = FlyingCnt[gameStateData->unk_02C];
     }
 
     gameStateData->unk_02F = gameStateData->unk_02F + gameStateData->unk_030;
@@ -3489,7 +3497,9 @@ s32 dm_game_main_cnt(struct_game_state_data *gameStateDataRef, GameMapCell *mapC
             gameStateDataRef->unk_030 = 1;
             gameStateDataRef->unk_032 = 1;
             gameStateDataRef->unk_02F = 0;
-            gameStateDataRef->unk_02E = 0;
+
+            // Start capsule counter at 2 instead of 0 (so first speed increment is after 8 capsules)
+            gameStateDataRef->unk_02E = 2;
             dm_set_capsel(gameStateDataRef);
             gameStateDataRef->unk_035 = 0;
             gameStateDataRef->unk_036 = 0;
@@ -6525,7 +6535,9 @@ void dm_game_init(bool arg0) {
         temp_s0_3->unk_031 = 0;
         temp_s0_3->unk_030 = 1;
         temp_s0_3->unk_032 = 1;
-        temp_s0_3->unk_02E = 0;
+
+        // Start capsule counter at 2 instead of 0 (so first speed increment is after 8 capsules)
+        temp_s0_3->unk_02E = 2;
         temp_s0_3->unk_02F = 0;
         temp_s0_3->unk_034 = 0;
         dm_set_capsel(temp_s0_3);
