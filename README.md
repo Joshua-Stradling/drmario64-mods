@@ -1,8 +1,6 @@
-# Dr. Mario 64 Sticky Garbage Mod
+# Dr. Mario 64 Sticky Garbage + NES Mechanics Mod
 
-This mod changes how garbage works in multiplayer gamemodes. In the original game, players can attack opponents by sending them garbage (single pieces falling in random columns onto the gamemap). Garbage is sent when a player clears more than one line at once (e.g. 2-line combos or more; combos must be cleared with a single capsule).
-
-In this version, AI players continue to receive normal garbage, but human players receive garbage attached to their upcoming capsule (which they can rotate and move around; the garbage will disconnect and fall from capsule once it has landed on the map).
+This is a combination of the Sticky Garbage mod and NES Mechanics mod (see their own branches for a proper description).
 
 ### Known Issues
 

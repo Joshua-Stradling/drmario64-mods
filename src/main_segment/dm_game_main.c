@@ -2370,35 +2370,34 @@ void dm_capsel_down(struct_game_state_data *gameStateData, GameMapCell *mapCells
     if (capsule->y[0] > 0) {
         current_fall_delay = FallSpeed[gameStateData->unk_02D];
 
-        // Add delay if all of the capsule is above y=4. Index 1 is 
-        // never deeper than index 0 because of rotational logic.
-        deepest_y = capsule->y[0];
-        i = 2;
-        while (deepest_y < 4 && i < capsule->piece_count) {
-            if (capsule->y[i] > deepest_y) {
-                deepest_y = capsule->y[i];
-            }
-            i++;
-        }
-        if (deepest_y < 4) {
-            current_fall_delay += BonusWait[deepest_y - 1][gameStateData->unk_02C];
-        }
+        // Remove bonus wait at top of bottle
+        // deepest_y = capsule->y[0];
+        // i = 2;
+        // while (deepest_y < 4 && i < capsule->piece_count) {
+        //     if (capsule->y[i] > deepest_y) {
+        //         deepest_y = capsule->y[i];
+        //     }
+        //     i++;
+        // }
+        // if (deepest_y < 4) {
+        //     current_fall_delay += BonusWait[deepest_y - 1][gameStateData->unk_02C];
+        // }
 
-        // Add delay if any given part of capsule is blocked
+        // Remove touchdown delay
         speed_delay = 0;
-        for (i = 0; i < capsule->piece_count; i++) {
-            if (get_map_info(mapCells, capsule->x[i], capsule->y[i] + 1) != 0) {
-                speed_delay = watchGame->unk_898;
-                break;
-            }
-        }
+        // for (i = 0; i < capsule->piece_count; i++) {
+        //     if (get_map_info(mapCells, capsule->x[i], capsule->y[i] + 1) != 0) {
+        //         speed_delay = watchGame->unk_898;
+        //         break;
+        //     }
+        // }
         
         gameStateData->unk_031 = current_fall_delay + speed_delay;
     }
     
-    // If capsule hasn't dropped, continue at a constant rate
+   // Update delay from 30 frames to variable depending on speed
     else {
-        gameStateData->unk_031 = 0x1E;
+        gameStateData->unk_031 = FlyingCnt[gameStateData->unk_02C];
     }
 
     // If not enough gravity has taken effect, don't drop the capsule this frame
@@ -4191,7 +4190,9 @@ s32 dm_game_main_cnt(struct_game_state_data *gameStateDataRef, GameMapCell *mapC
             gameStateDataRef->unk_030 = 1;
             gameStateDataRef->unk_032 = 1;
             gameStateDataRef->unk_02F = 0;
-            gameStateDataRef->unk_02E = 0;
+
+            // Start capsule counter at 2 instead of 0 (so first speed increment is after 8 capsules)
+            gameStateDataRef->unk_02E = 2;
             dm_set_capsel(gameStateDataRef);
             gameStateDataRef->unk_035 = 0;
             gameStateDataRef->unk_036 = 0;
@@ -7384,7 +7385,9 @@ void dm_game_init(bool arg0) {
         temp_s0_3->unk_031 = 0;
         temp_s0_3->unk_030 = 1;
         temp_s0_3->unk_032 = 1;
-        temp_s0_3->unk_02E = 0;
+
+        // Start capsule counter at 2 instead of 0 (so first speed increment is after 8 capsules)
+        temp_s0_3->unk_02E = 2;
         temp_s0_3->unk_02F = 0;
         temp_s0_3->unk_034 = 0;
 
