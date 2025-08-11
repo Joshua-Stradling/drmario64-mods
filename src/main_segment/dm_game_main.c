@@ -2306,16 +2306,24 @@ void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
 
     if (cap->pos_y[0] > 0) {
         i = FallSpeed[state->cap_speed];
-        if ((cap->pos_y[0] < 4) && (cap->pos_y[0] > 0)) {
-            i += BonusWait[cap->pos_y[0] - 1][state->cap_def_speed];
-        }
+
+        // Remove bonus wait at top of bottle
+        // if ((cap->pos_y[0] < 4) && (cap->pos_y[0] > 0)) {
+        //     i += BonusWait[cap->pos_y[0] - 1][state->cap_def_speed];
+        // }
+
+        // Remove touchdown wait
         j = 0;
-        if (get_map_info(map, state->now_cap.pos_x[0], cap->pos_y[0] + 1) != 0) {
-            j = st->touch_down_wait;
-        }
+        // if (get_map_info(map, state->now_cap.pos_x[0], cap->pos_y[0] + 1) != 0) {
+        //     j = st->touch_down_wait;
+        // }
+
         state->cap_speed_max = i + j;
-    } else {
-        state->cap_speed_max = 30;
+    }
+    
+    // Update delay from 30 frames to variable depending on speed
+    else {
+        state->cap_speed_max = FlyingCnt[state->cap_def_speed];
     }
 
     state->cap_speed_count = state->cap_speed_count + state->cap_speed_vec;
@@ -3974,7 +3982,9 @@ DmMainCnt dm_game_main_cnt(struct_game_state_data *state, GameMapCell *map, s32 
             state->cap_speed_vec = 1;
             state->cap_magazine_cnt = 1;
             state->cap_speed_count = 0;
-            state->cap_count = 0;
+
+            // Start capsule counter at 2 instead of 0 (so first speed increment is after 8 capsules)
+            state->cap_count = 2;
             dm_set_capsel(state);
             state->erase_anime = 0;
             state->erase_anime_count = 0;
@@ -7208,7 +7218,9 @@ void dm_game_init(bool reinit) {
         temp_s0_3->cap_speed_max = 0;
         temp_s0_3->cap_speed_vec = 1;
         temp_s0_3->cap_magazine_cnt = 1;
-        temp_s0_3->cap_count = 0;
+
+        // Start capsule counter at 2 instead of 0 (so first speed increment is after 8 capsules)
+        temp_s0_3->cap_count = 2;
         temp_s0_3->cap_speed_count = 0;
         temp_s0_3->cap_move_se_flg = false;
         dm_set_capsel(temp_s0_3);
