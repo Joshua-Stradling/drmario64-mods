@@ -2805,12 +2805,12 @@ void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
         return;
     }
 
-    // Lock capsule if there is something directly beneath any part of it (including the floor)
+    // Lock capsule if there is something directly beneath any part of it 
+    // (including the floor), except for (2,1) and (5,1)
     if (capsule->pos_y[0] > 0) {
         for (i = 0; i < capsule->piece_count; i++) {
-            if (capsule->pos_y[i] == 16 || 
-                get_map_info(map, capsule->pos_x[i], capsule->pos_y[i] + 1)
-            ) {
+            bool is_above_exception = (capsule->pos_x[i] == 2 || capsule->pos_x[i] == 5) && capsule->pos_y[i] == 0;
+            if (capsule->pos_y[i] == 16 || (get_map_info(map, capsule->pos_x[i], capsule->pos_y[i] + 1) && !is_above_exception)) {
                 capsule->falling_flag = 0;
                 break;
             }
@@ -2819,8 +2819,74 @@ void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
 
     // Fall if it's allowed
     if (capsule->falling_flag != 0) {
+
+        // Indexes of pieces to remove
+        int pieces_to_remove[MAX_STICKY_GARBAGE];
+        int num_to_remove = 0;
+
         for (i = 0; i < capsule->piece_count; i++) {
             capsule->pos_y[i]++;
+        }
+
+        // If any garbage pieces overlap with map to the right or left 
+        // of bottle opening, mark them to be detached from capsule
+        if (get_map_info(map, 2, 1)) {
+            for (i = 0; i < capsule->piece_count; i++) {
+                if (capsule->pos_x[i] == 2 && capsule->pos_y[i] == 1) {
+                    pieces_to_remove[num_to_remove] = i;
+                    num_to_remove++;
+                }
+            }
+        }
+        if (get_map_info(map, 5, 1)) {
+            for (i = 0; i < capsule->piece_count; i++) {
+                if (capsule->pos_x[i] == 5 && capsule->pos_y[i] == 1) {
+                    pieces_to_remove[num_to_remove] = i;
+                    num_to_remove++;
+                }
+            }
+        }
+
+        // Remake capsule if needed
+        if (num_to_remove) {
+            Capsule new_capsule;
+            int skipped_indexes = 0;
+            new_capsule.piece_count = capsule->piece_count - num_to_remove;
+
+            // Add piece to map and remove it from capsule
+            i = 0;
+            while (i < capsule->piece_count) {
+                int j;
+                int current_index = i + skipped_indexes;
+
+                // If piece is in list, skip it and add it to map
+                bool delete = false;
+                for (j = 0; j < num_to_remove; j++) {
+                    if (current_index == pieces_to_remove[j]) {
+                        delete = true;
+                        break;
+                    }
+                }
+                if (delete) {
+                    set_map(map, capsule->pos_x[current_index], capsule->pos_y[current_index], capsule->sprite_index[current_index],
+                            capsule->palette_index[current_index] + black_color_1384[state->flg_game_over]);
+                    skipped_indexes++;
+                }
+
+                // Otherwise, add it to the new capsule
+                else {
+                    new_capsule.pos_x[i] = capsule->pos_x[current_index];
+                    new_capsule.pos_y[i] = capsule->pos_y[current_index];
+                    new_capsule.sprite_index[i] = capsule->sprite_index[current_index];
+                    new_capsule.palette_index[i] = capsule->palette_index[current_index];
+                    i++;
+                }
+            }
+            for (i = 0; i < new_capsule.piece_count; i++) {
+                capsule->pos_x[i] = new_capsule.pos_x[i];
+                capsule->pos_y[i] = new_capsule.pos_y[i];
+            }
+            capsule->piece_count = new_capsule.piece_count;
         }
 
         // Check for fall overlap (and trigger game over)
