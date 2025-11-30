@@ -267,6 +267,7 @@ typedef struct struct_game_state_data {
     /* 0x2AB */ u8 vs; /* Original name: vs */
     /* 0x2AC */ struct_game_state_data_blk blk[GAME_MAP_ROWS+1][GAME_MAP_COLUMNS]; /* Original name: blk */
     /* 0x3CC */ struct_game_state_data_cap cap; /* Original name: cap */
+    /* 0x3D2 */ u8 prev_capsel_y_coord; // Added to match NES timing in dm_capsel_down()
 } struct_game_state_data; // size = 0x3D4 (updated from 0x3C4)
 
 // Functions added for mod

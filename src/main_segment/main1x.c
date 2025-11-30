@@ -126,8 +126,10 @@ u32 evs_high_score = 0;
  */
 s32 evs_vs_count = 3;
 
-// Updated index 2 from 20 to 14; high speed capsules will enter faster
-u8 FlyingCnt[3] = { 40, 20, 14 };
+/**
+ * Original name: FlyingCnt
+ */
+u8 FlyingCnt[3] = { 0x28, 0x14, 0x14 };
 
 // Removed bonus wait at top of capsule
 // /**
