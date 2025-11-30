@@ -7263,44 +7263,44 @@ void dm_game_graphic_common(struct_game_state_data *state, s32 player_no, GameMa
 
     gfxSetScissor(&gGfxHead, GFXSETSCISSOR_INTERLACE_NO, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    if (!UNK_PLAYER0_CHECK(state, player_no)) {
-        s32 fallPosY[2];
-        Capsule *cap;
+    // if (!UNK_PLAYER0_CHECK(state, player_no)) {
+    //     s32 fallPosY[2];
+    //     Capsule *cap;
 
-        if ((visible_fall_point[player_no] == 0) || (state->mode_now != dm_mode_down)) {
-            return;
-        }
+    //     if ((visible_fall_point[player_no] == 0) || (state->mode_now != dm_mode_down)) {
+    //         return;
+    //     }
 
-        if ((state->now_cap.pos_y[0] <= 0) || (state->now_cap.display_flag == 0)) {
-            return;
-        }
+    //     if ((state->now_cap.pos_y[0] <= 0) || (state->now_cap.display_flag == 0)) {
+    //         return;
+    //     }
 
-        cap = &state->now_cap;
+    //     cap = &state->now_cap;
 
-        dm_find_fall_point(map, cap, fallPosY);
+    //     dm_find_fall_point(map, cap, fallPosY);
 
-        gDPSetRenderMode(gGfxHead++, G_RM_XLU_SURF, G_RM_XLU_SURF2);
-        gDPSetCombineMode(gGfxHead++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-        gDPSetPrimColor(gGfxHead++, 0, 0, 96, 96, 96, 150);
+    // //     gDPSetRenderMode(gGfxHead++, G_RM_XLU_SURF, G_RM_XLU_SURF2);
+    // //     gDPSetCombineMode(gGfxHead++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+    // //     gDPSetPrimColor(gGfxHead++, 0, 0, 96, 96, 96, 150);
 
-        for (i = 0; i < 2; i++) {
-            s32 x;
-            s32 y;
-            s32 size;
+    //     for (i = 0; i < 2; i++) {
+    //         s32 x;
+    //         s32 y;
+    //         s32 size;
 
-            tex = dm_game_get_capsel_pal(size_flg, cap->palette_index[i]);
-            load_TexPal(tex->texs[TI_TEX_TLUT]);
-            size = state->map_item_size;
-            x = cap->pos_x[i] * size + state->map_x;
-            y = fallPosY[i] * size + state->map_y;
+    //         tex = dm_game_get_capsel_pal(size_flg, cap->palette_index[i]);
+    //         load_TexPal(tex->texs[TI_TEX_TLUT]);
+    //         size = state->map_item_size;
+    //         x = cap->pos_x[i] * size + state->map_x;
+    //         y = fallPosY[i] * size + state->map_y;
 
-            gSPTextureRectangle(gGfxHead++, (x * 4), (y * 4), ((x + size) * 4), ((y + size) * 4), G_TX_RENDERTILE,
-                                0x0000, (cap->sprite_index[i] * size << 5), 1 << 10, 1 << 10);
-        }
+    //         gSPTextureRectangle(gGfxHead++, (x * 4), (y * 4), ((x + size) * 4), ((y + size) * 4), G_TX_RENDERTILE,
+    //                             0x0000, (cap->sprite_index[i] * size << 5), 1 << 10, 1 << 10);
+    //     }
 
-        gDPSetPrimColor(gGfxHead++, 0, 0, 255, 255, 255, 255);
-        gDPSetRenderMode(gGfxHead++, G_RM_TEX_EDGE, G_RM_TEX_EDGE2);
-    }
+    //     gDPSetPrimColor(gGfxHead++, 0, 0, 255, 255, 255, 255);
+    //     gDPSetRenderMode(gGfxHead++, G_RM_TEX_EDGE, G_RM_TEX_EDGE2);
+    // }
 }
 
 /**

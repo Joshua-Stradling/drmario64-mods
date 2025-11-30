@@ -6,7 +6,7 @@ In this version, AI players continue to receive normal garbage, but human player
 
 ### Known Issues
 
-- Ghost capsule preview doesn't display sticky garbage additions
+- Ghost capsule preview is disabled because it doesn't properly display sticky garbage additions
 
 ### Based On
 
