@@ -1,6 +1,6 @@
 # Dr. Mario 64 Decompilation (Base Fork)
 
-This branch is a matching decomp of Dr. Mario 64. No gameplay modifications have been added here. It is used as a base to build on in the other branches.
+This mod removes the ghost capsule preview feature from the game.
 
 ### Based On
 
