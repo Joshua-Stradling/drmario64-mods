@@ -254,6 +254,9 @@ typedef struct struct_game_state_data {
     /* 0x29B */ u8 vs; /* Original name: vs */
     /* 0x29C */ struct_game_state_data_blk blk[GAME_MAP_ROWS+1][GAME_MAP_COLUMNS]; /* Original name: blk */
     /* 0x3BC */ struct_game_state_data_cap cap; /* Original name: cap */
+
+    // Added to match NES timing in dm_capsel_down() (uses padding from previous struct)
+    /* 0x3C2 */ u8 prev_capsel_y_coord;
 } struct_game_state_data; // size = 0x3C4
 
 u32 dm_make_score(struct_game_state_data *state);

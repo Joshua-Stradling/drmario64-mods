@@ -2321,9 +2321,14 @@ void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
         state->cap_speed_max = i + j;
     }
     
-    // Update delay from 30 frames to variable depending on speed
+    // Update delay from 30 frames to variable where previous capsel landed
     else {
-        state->cap_speed_max = FlyingCnt[state->cap_def_speed];
+        if (state->prev_capsel_y_coord) {
+            state->cap_speed_max = 10 + state->prev_capsel_y_coord;
+        }
+        else {
+            state->cap_speed_max = 30;
+        }
     }
 
     state->cap_speed_count = state->cap_speed_count + state->cap_speed_vec;
@@ -2382,6 +2387,12 @@ void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
     dm_snd_play_in_game(SND_INDEX_66);
     state->mode_now = dm_mode_down_wait;
     cap->capsel_flg_0 = 0;
+
+    // Track the bottom y-axis of the previous capsule
+    state->prev_capsel_y_coord = cap->pos_y[0];
+    if (cap->pos_y[1] > state->prev_capsel_y_coord) {
+        state->prev_capsel_y_coord = cap->pos_y[1];
+    }
 
     for (i = 0; i < ARRAY_COUNTU(cap->pos_y); i++) {
         if (cap->pos_y[i] != 0) {
@@ -3985,6 +3996,10 @@ DmMainCnt dm_game_main_cnt(struct_game_state_data *state, GameMapCell *map, s32 
 
             // Start capsule counter at 2 instead of 0 (so first speed increment is after 8 capsules)
             state->cap_count = 2;
+
+            // Initialize added variable
+            state->prev_capsel_y_coord = 0;
+
             dm_set_capsel(state);
             state->erase_anime = 0;
             state->erase_anime_count = 0;
@@ -7221,6 +7236,10 @@ void dm_game_init(bool reinit) {
 
         // Start capsule counter at 2 instead of 0 (so first speed increment is after 8 capsules)
         temp_s0_3->cap_count = 2;
+
+        // Initialize added variable
+        temp_s0_3->prev_capsel_y_coord = 0;
+
         temp_s0_3->cap_speed_count = 0;
         temp_s0_3->cap_move_se_flg = false;
         dm_set_capsel(temp_s0_3);
