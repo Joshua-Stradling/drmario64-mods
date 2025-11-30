@@ -531,9 +531,21 @@ void go_down(struct_game_state_data *state, GameMapCell *map, s32 cout) {
             s32 index = GAME_MAP_GET_INDEX(i, j);
 
             if (map[index].capsel_m_flg[1] != 0) {
+
+                // If this is the first falling piece found, reset previous 
+                // lowest row reached so far beforehand
+                if (!se_flg) {
+                    state->prev_capsel_y_coord = 0;
+                }
+
                 set_map(map, map[index].pos_m_x, map[index].pos_m_y + 1, map[index].capsel_m_g, map[index].capsel_m_p);
                 clear_map(map, map[index].pos_m_x, map[index].pos_m_y);
                 se_flg = true;
+
+                // Update lowest row reached so far
+                if ((i + 1) > state->prev_capsel_y_coord) {
+                    state->prev_capsel_y_coord = i + 1;
+                }
             }
         }
     }
