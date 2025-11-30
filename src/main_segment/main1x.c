@@ -144,7 +144,7 @@ u8 FlyingCnt[3] = { 0x28, 0x14, 0x14 };
 u8 D_8008842C[] = { 0x01, 0x02, 0x02, 0x02 };
 
 // Updated index 2 from 15 to 16 (to match NES values)
-s8 GameSpeed[] = { 0, 10, 16, 55 };
+s8 GameSpeed[] = { 0, 10, 16, 65 };
 
 // Updated table to match NES values (and added 1)
 u8 FallSpeed[66] = {
