@@ -259,6 +259,9 @@ typedef struct struct_game_state_data {
     /* 0x3C2 */ u8 prev_capsel_y_coord;
 } struct_game_state_data; // size = 0x3C4
 
+// Added to simulate NES capsule generation
+u16 lfsr_step(u16 state);
+
 u32 dm_make_score(struct_game_state_data *state);
 void dm_attack_se(struct_game_state_data *state, s32 player_no);
 void dm_warning_h_line(struct_game_state_data *state, GameMapCell *map);

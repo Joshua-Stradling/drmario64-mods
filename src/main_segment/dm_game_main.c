@@ -780,6 +780,14 @@ void rotate_capsel(GameMapCell *map, struct_game_state_data_now_cap *cap, s32 mo
     }
 }
 
+u16 lfsr_step(u16 state) {
+    u8 b1 = (state >> 1) & 1;
+    u8 b9 = (state >> 9) & 1;
+    u8 feedback = b1 ^ b9;
+    state = (state >> 1) | (feedback << 15);
+    return state;
+}
+
 #define CAPSMAGAZINE_GET_A(mag) (((mag) >> 4) % 3)
 #define CAPSMAGAZINE_GET_B(mag) ((mag) % 3)
 
@@ -787,27 +795,70 @@ void rotate_capsel(GameMapCell *map, struct_game_state_data_now_cap *cap, s32 mo
  * Original name: dm_make_magazine
  */
 void dm_make_magazine(void) {
-    u8 sp18[2];
-    s32 i;
+    int i;
+    int acc = 0;
 
-    CapsMagazine[0] = random(0xFFFF) % ARRAY_COUNT(CapsMagazine);
+    // Initial seed
+    u16 state = random(0xFFFF);
+    
+    // Ensure state can't fall into lfsr all-zero loop
+    while (state == 0 || state == 0x0100) {
+        state = random(0xFFFF);
+    }
 
-    sp18[0] = CAPSMAGAZINE_GET_A(CapsMagazine[0]);
-    sp18[1] = CAPSMAGAZINE_GET_B(CapsMagazine[0]);
+    // Loop over LFSR to generate capsule sequence backwards (from 1 to 128)
+    for (i = 0x80; i >= 1 ; i--) {
+        state = lfsr_step(state);
+        acc += state & 0x0F;
+        acc = acc % 9;
+        
+        // Encode magazine with a byte that will decode to the selected capsule colors
+        switch (acc) {
 
-    i = 1;
-    while (i < ARRAY_COUNT(CapsMagazine)) {
-        u8 sp20[2];
+            // yellow-yellow
+            case 0:
+                CapsMagazine[i] = 0x10;
+                break;
 
-        CapsMagazine[i] = random(0xFFFF) % ARRAY_COUNT(CapsMagazine);
-
-        sp20[0] = CAPSMAGAZINE_GET_A(CapsMagazine[i]);
-        sp20[1] = CAPSMAGAZINE_GET_B(CapsMagazine[i]);
-
-        if ((sp20[0] != sp18[0]) || sp20[1] != sp18[1]) {
-            i++;
-            sp18[0] = sp20[0];
-            sp18[1] = sp20[1];
+            // yellow-red
+            case 1:
+                CapsMagazine[i] = 0x12;
+                break;
+            
+            // yellow-blue
+            case 2:
+                CapsMagazine[i] = 0x11;
+                break;
+            
+            // red-yellow
+            case 3:
+                CapsMagazine[i] = 0x01;
+                break;
+            
+            // red-red
+            case 4:
+                CapsMagazine[i] = 0x00;
+                break;
+            
+            // red-blue
+            case 5:
+                CapsMagazine[i] = 0x02;
+                break;
+            
+            // blue-yellow
+            case 6:
+                CapsMagazine[i] = 0x22;
+                break;
+            
+            // blue-red
+            case 7:
+                CapsMagazine[i] = 0x21;
+                break;
+            
+            // blue-blue
+            case 8:
+                CapsMagazine[i] = 0x20;
+                break;
         }
     }
 }
@@ -848,7 +899,9 @@ void dm_set_capsel(struct_game_state_data *state) {
     state->cap_magazine_save = state->cap_magazine_cnt;
 
     state->cap_magazine_cnt++;
-    if (state->cap_magazine_cnt >= 254) {
+
+    // Loop over after every 128 capsules (starts at index 1)
+    if (state->cap_magazine_cnt > 128) {
         state->cap_magazine_cnt = 1;
     }
 
@@ -2311,7 +2364,7 @@ static_assert(ARRAY_COUNT(black_color_1384) == 2, "indexed by bool");
  * Original name: dm_capsel_down
  */
 void dm_capsel_down(struct_game_state_data *state, GameMapCell *map) {
-    struct_watchGame *st = watchGame;
+    // struct_watchGame *st = watchGame;
     struct_game_state_data_now_cap *cap = &state->now_cap;
     s32 i;
     s32 j;
