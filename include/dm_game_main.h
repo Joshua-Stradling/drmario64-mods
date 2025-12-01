@@ -292,6 +292,7 @@ Point new_piece(Capsule *capsule);
 ValidPoint new_piece2(Capsule *capsule, Point index_point, u8 x_or_y);
 ValidPoint is_valid_garbage_position(Capsule *capsule, Point point);
 Point point_offset(Point point, u8 x_or_y, s8 offset);
+u16 lfsr_step(u16 state);
 
 u32 dm_make_score(struct_game_state_data *state);
 void dm_attack_se(struct_game_state_data *state, s32 player_no);
