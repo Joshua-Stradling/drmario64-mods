@@ -66,10 +66,8 @@ u8 evs_seqnumb = 0;
  */
 u8 evs_playcnt = 1;
 
-/**
- * Original name: evs_keyrept
- */
-u8 evs_keyrept[2] = { 0xC, 6 };
+// Modified for NES-style DAS
+u8 evs_keyrept[2] = { 16, 6 };
 
 /**
  * Original name: evs_gamespeed

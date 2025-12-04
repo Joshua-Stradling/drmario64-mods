@@ -711,10 +711,40 @@ void translate_capsel(GameMapCell *map, struct_game_state_data *state, s32 move_
             dm_snd_play_in_game(SND_INDEX_65);
         }
 
+        // Only jump start DAS if it is blocked by a pill/capsule (not the side walls)
         if (move_vec == 1) {
-            joyCursorFastSet(R_JPAD, joy_no);
+            bool block_obstructing = false;
+            int i;
+            for (i = 0; i < capsule->piece_count; i++) {
+
+                // Only check gamefield to the right if capsule piece isn't against 
+                // right wall and the capsule piece is in the gamefield
+                if (capsule->pos_x[i] < 7 && capsule->pos_y[i] > 0) {
+                    if (get_map_info(map, capsule->pos_x[i] + 1, capsule->pos_y[i])) {
+                        block_obstructing = true;
+                        break;
+                    }
+                }
+            }
+            if (block_obstructing) {
+                joyCursorFastSet(R_JPAD, joy_no);
+            }
         } else if (move_vec == -1) {
-            joyCursorFastSet(L_JPAD, joy_no);
+            bool block_obstructing = false;
+            int i;
+            for (i = 0; i < capsule->piece_count; i++) {
+                // Only check gamefield to the left if capsule piece isn't against 
+                // left wall and the capsule piece is in the gamefield
+                if (capsule->pos_x[i] > 0 && capsule->pos_y[i] > 0) {
+                    if (get_map_info(map, capsule->pos_x[i] - 1, capsule->pos_y[i])) {
+                        block_obstructing = true;
+                        break;
+                    }
+                }
+            }
+            if (block_obstructing) {
+                joyCursorFastSet(L_JPAD, joy_no);
+            }
         }
     }
 }
@@ -4107,7 +4137,14 @@ DmMainCnt dm_game_main_cnt_1P(struct_game_state_data *state, GameMapCell *map, s
             }
             break;
 
+        // Capsule just landed
         case dm_mode_down_wait:
+
+            // Mark that the capsule is no longer moveable for DAS support (for human players)
+            if (state->player_type == 0) {
+                capsule_controllable[main_joy[player_no]] = 0;
+            }
+
             if (dm_check_game_over(state, map)) {
                 for (var_s0 = 0; var_s0 < ANIMES_COUNT; var_s0++) {
                     if (watchGameP->virus_anime_state[var_s0].animeSeq.animeNo != ANIMENO_4) {
@@ -4516,6 +4553,12 @@ DmMainCnt dm_game_main_cnt(struct_game_state_data *state, GameMapCell *map, s32 
 
         // After capsule has fallen, check if anything needs to be cleared
         case dm_mode_down_wait:
+
+            // Mark that the capsule is no longer moveable for DAS support (for human players)
+            if (state->player_type == 0) {
+                capsule_controllable[main_joy[player_no]] = 0;
+            }
+
             if (dm_check_game_over(state, map)) {
                 return dm_ret_game_over;
             }
@@ -5186,6 +5229,13 @@ void dm_set_pause_and_volume(struct_game_state_data **state, s32 count) {
         dm_seq_set_volume(0x40);
         if (!st->replayFlag) {
             for (i = 0; i < count; i++) {
+
+                // Update DAS settings for pause menu (for human players); key_control_main() will resume
+                // Mark that the capsule is no longer moveable for DAS support (for human players)
+                if (state[i]->player_type == 0) {
+                    capsule_controllable[main_joy[i]] = 0;
+                }
+
                 dm_set_pause_on(state[i], var_s2);
             }
         } else {
@@ -7874,14 +7924,14 @@ void key_control_main(struct_game_state_data *state, GameMapCell *map, s32 playe
             dm_draw_capsel_by_cpu_tentative(state, xx, yy);
         }
 
-        if (state->player_type == PLAYERTYPE_0) {
-            if (gControllerHoldButtons[joy_no] & R_JPAD) {
-                joyCursorFastSet(R_JPAD, joy_no);
-            }
-            if (gControllerHoldButtons[joy_no] & L_JPAD) {
-                joyCursorFastSet(L_JPAD, joy_no);
-            }
-        }
+        // if (state->player_type == PLAYERTYPE_0) {
+        //     if (gControllerHoldButtons[joy_no] & R_JPAD) {
+        //         joyCursorFastSet(R_JPAD, joy_no);
+        //     }
+        //     if (gControllerHoldButtons[joy_no] & L_JPAD) {
+        //         joyCursorFastSet(L_JPAD, joy_no);
+        //     }
+        // }
     } else if (state->mode_now == dm_mode_down) {
         if (state->cnd_static == dm_cnd_wait) {
             Capsule *cap;
@@ -7893,6 +7943,11 @@ void key_control_main(struct_game_state_data *state, GameMapCell *map, s32 playe
                 if (st->replayFlag) {
                     joygam[player_no] = temp_s1_2;
                 }
+            }
+
+            // If player is NOT CPU, mark that capsule is moveable for DAS
+            else {
+                capsule_controllable[joy_no] = 1;
             }
 
             cap = &state->now_cap;
@@ -7916,14 +7971,15 @@ void key_control_main(struct_game_state_data *state, GameMapCell *map, s32 playe
 
                 state->cap_speed_vec = val;
             }
-        } else if (state->player_type == PLAYERTYPE_0) {
-            if (gControllerHoldButtons[joy_no] & R_JPAD) {
-                joyCursorFastSet(R_JPAD, joy_no);
-            }
-            if (gControllerHoldButtons[joy_no] & L_JPAD) {
-                joyCursorFastSet(L_JPAD, joy_no);
-            }
         }
+        // else if (state->player_type == PLAYERTYPE_0) {
+        //     if (gControllerHoldButtons[joy_no] & R_JPAD) {
+        //         joyCursorFastSet(R_JPAD, joy_no);
+        //     }
+        //     if (gControllerHoldButtons[joy_no] & L_JPAD) {
+        //         joyCursorFastSet(L_JPAD, joy_no);
+        //     }
+        // }
 
         if (!st->demo_flag) {
             if (dm_calc_capsel_pos(state, xx, yy)) {
@@ -7946,10 +8002,10 @@ void key_control_main(struct_game_state_data *state, GameMapCell *map, s32 playe
             st->force_draw_capsel_count[player_no]--;
         }
 
-        if (state->player_type == PLAYERTYPE_0) {
-            joyCursorFastSet(R_JPAD, joy_no);
-            joyCursorFastSet(L_JPAD, joy_no);
-        }
+        // if (state->player_type == PLAYERTYPE_0) {
+        //     joyCursorFastSet(R_JPAD, joy_no);
+        //     joyCursorFastSet(L_JPAD, joy_no);
+        // }
     }
 }
 
@@ -8055,6 +8111,16 @@ void dm_game_init(bool reinit) {
     s32 k;
     struct_game_state_data *temp_s0_3;
     struct_game_state_data *var_s0_2;
+
+    // For in-game DAS movement
+    in_game = 1;
+
+    // Reset DAS counters
+    for (i = 0; i < ARRAY_COUNT(joycnt); i++) {
+        for (j = 0; j < ARRAY_COUNT(joycnt[i]); j++) {
+            joycnt[i][j] = 0;
+        }
+    }
 
     if (!reinit || !st->replayFlag) {
         st->replayFlag = 0;
@@ -8210,6 +8276,10 @@ void dm_game_init(bool reinit) {
     }
 
     for (i = 0; i < ARRAY_COUNT(game_state_data); i++) {
+        
+        // Mark to perform in-game DAS behavior
+        capsule_controllable[i] = 0;
+        
         temp_s0_3 = &game_state_data[i];
 
         temp_s0_3->player_no = i;
@@ -8888,6 +8958,7 @@ enum_main_no dm_game_main(NNSched *sc) {
     bool loop_flg = true;
     DmMainCnt gs;
     struct_watchGame *st;
+    int i;
 
     key_cntrol_init();
 
@@ -8976,6 +9047,13 @@ enum_main_no dm_game_main(NNSched *sc) {
 #endif
             graphic_no = GRAPHIC_NO_4;
         }
+    }
+    
+    // Return to normal DAS behavior (outside of game)
+    in_game = 0;
+
+    for (i = 0; i < 4; i++) {
+        capsule_controllable[i] = 0;
     }
 
     dm_think_flg = false;

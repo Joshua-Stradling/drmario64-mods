@@ -63,6 +63,10 @@ u16 joycur1;
  */
 u16 joycur2;
 
+// Added for modified in-game DAS
+u8 in_game;
+u8 capsule_controllable[MAXCONTROLLERS];
+
 OSContStatus B_800F5358[4];
 OSMesgQueue B_800F3E38;
 OSMesg B_800F3E60[1];
@@ -101,10 +105,12 @@ s32 joyInit(s32 arg0 UNUSED) {
         joyflg[i] = 0;
         joygam[i] = 0;
         joygmf[i] = false;
+        capsule_controllable[i] = 0;
     }
 
     joycur1 = 0x14;
     joycur2 = 4;
+    in_game = 0;
     return 4;
 }
 
@@ -176,14 +182,40 @@ void joyProcCore(void) {
 
         for (j = 0, mask = 0x8000; j < ARRAY_COUNT(joycnt[i]); j++, mask >>= 1) {
             if (joyflg[i] & mask) {
-                if (mask & gControllerHoldButtons[i]) {
-                    joycnt[i][j]++;
-                    if ((joycnt[i][j] == 1) ||
-                        ((joycnt[i][j] >= joycur1) && (((joycnt[i][j] - joycur1) % joycur2) == 0))) {
-                        joycur[i] |= mask;
+
+                // Don't update L_JPAD or R_JPAD if in a game
+                if (!((L_JPAD & mask || R_JPAD & mask) && in_game)) {
+                    if (mask & gControllerHoldButtons[i]) {
+                        joycnt[i][j]++;
+                        if ((joycnt[i][j] == 1) ||
+                            ((joycnt[i][j] >= joycur1) && (((joycnt[i][j] - joycur1) % joycur2) == 0))) {
+                            joycur[i] |= mask;
+                        }
+                    } else {
+                        joycnt[i][j] = 0;
                     }
-                } else {
-                    joycnt[i][j] = 0;
+                }
+
+                // Otherwise, only update L_JPAD and R_JPAD if the capsule is controllable
+                else if (capsule_controllable[i]) {
+                    if (mask & gControllerHoldButtons[i]) {
+
+                        // If button was just pressed, continue signal and reset counter
+                        if (mask & gControllerPressedButtons[i]) {
+                            joycur[i] |= mask;
+
+                            // Counter is shared between L_JPAD and R_JPAD; reset both
+                            joycnt[i][6] = 0;
+                            joycnt[i][7] = 0;
+                        }
+                        else {
+                            joycnt[i][6]++;
+                            joycnt[i][7]++;
+                            if ((joycnt[i][j] >= joycur1) && (((joycnt[i][j] - joycur1) % joycur2) == 0)) {
+                                joycur[i] |= mask;
+                            }
+                        }
+                    }
                 }
             }
         }
