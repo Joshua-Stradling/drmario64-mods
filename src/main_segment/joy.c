@@ -211,7 +211,12 @@ void joyProcCore(void) {
                         else {
                             joycnt[i][6]++;
                             joycnt[i][7]++;
-                            if ((joycnt[i][j] >= joycur1) && (((joycnt[i][j] - joycur1) % joycur2) == 0)) {
+
+                            // If either counter reaches threshold, continue signal
+                            if ((joycnt[i][6] >= joycur1) && (((joycnt[i][6] - joycur1) % joycur2) == 0)) {
+                                joycur[i] |= mask;
+                            }
+                            else if ((joycnt[i][7] >= joycur1) && (((joycnt[i][7] - joycur1) % joycur2) == 0)) {
                                 joycur[i] |= mask;
                             }
                         }
