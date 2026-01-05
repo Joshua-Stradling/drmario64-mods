@@ -1,6 +1,6 @@
-# Dr. Mario 64 NES Mechanics Mod
+# Dr. Mario 64 Story High Speed + NES Mechanics Mod
 
-This mod changes the speed and timing of the capsules to be more consistent with the NES version of Dr. Mario.
+This mod changes the default speed of story mode to be high instead of medium, as well as updating the speed and timing of the capsules to be more consistent with the NES version of Dr. Mario (see individual mod branches).
 
 ### Based On
 
