@@ -7184,9 +7184,6 @@ void dm_game_init(bool reinit) {
     struct_game_state_data *temp_s0_3;
     struct_game_state_data *var_s0_2;
 
-    // For in-game DAS movement
-    in_game = 1;
-
     // Reset DAS counters
     for (i = 0; i < ARRAY_COUNT(joycnt); i++) {
         for (j = 0; j < ARRAY_COUNT(joycnt[i]); j++) {
@@ -8026,6 +8023,9 @@ enum_main_no dm_game_main(NNSched *sc) {
     DmMainCnt gs;
     struct_watchGame *st;
     int i;
+
+    // For in-game DAS movement
+    in_game = 1;
 
     key_cntrol_init();
 
