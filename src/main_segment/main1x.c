@@ -538,7 +538,7 @@ enum_main_no main12(void) {
                     j = MIN((s32)THINKLEVEL_MAX - 1, evs_story_level);
 
                     var_a2->virus_level = StoryVirLv_226[j][evs_story_no];
-                    var_a2->cap_def_speed = 1;
+                    var_a2->cap_def_speed = 2;
                     var_a2->charNo = _stageToChar_tbl_228[temp_s2][evs_story_no];
                     var_a2->player_type = PLAYERTYPE_1;
                     var_a2->think_level = j;
