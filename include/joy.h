@@ -10,6 +10,10 @@ void joyCursorFastSet(u16 mask, u8 index);
 s32 joyResponseCheck(void);
 #endif
 
+// Added for modified in-game DAS
+extern u8 in_game;
+extern u8 capsule_controllable[MAXCONTROLLERS];
+
 // COMMON
 
 extern u16 joycur[MAXCONTROLLERS+1];
