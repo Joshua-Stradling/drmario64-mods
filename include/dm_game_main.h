@@ -46,24 +46,24 @@ static_assert(TEAMNUMBER_MAX == MAX_PLAYERS, "");
 // First 2 indexes are a connected domino, any additional are garbage 
 // that will fall independently after the capsule lands.
 typedef struct Capsule {
-    /* 0x0 */ s8 pos_x[MAX_CAPSULE_SIZE]; /* Original name: pos_x */
-    /* 0x2 */ s8 pos_y[MAX_CAPSULE_SIZE]; /* Original name: pos_y */
-    /* 0x4 */ s8 sprite_index[MAX_CAPSULE_SIZE]; /* Original name: casel_g */
-    /* 0x6 */ s8 palette_index[MAX_CAPSULE_SIZE]; /* Original name: capsel_p */
-    /* 0x8 */ s8 display_flag;
-    /* 0x9 */ s8 falling_flag;
-    /* 0xA */ s8 capsel_flg_2;
-    /* 0xB */ u8 piece_count; // 2 for standard, 3–4 with garbage
-} Capsule; // size = 0xC
+    /* 0x0  */ s8 pos_x[MAX_CAPSULE_SIZE]; /* Original name: pos_x */
+    /* 0x4  */ s8 pos_y[MAX_CAPSULE_SIZE]; /* Original name: pos_y */
+    /* 0x8  */ s8 sprite_index[MAX_CAPSULE_SIZE]; /* Original name: casel_g */
+    /* 0xC  */ s8 palette_index[MAX_CAPSULE_SIZE]; /* Original name: capsel_p */
+    /* 0x10 */ s8 display_flag;
+    /* 0x11 */ s8 falling_flag;
+    /* 0x12 */ s8 capsel_flg_2;
+    /* 0x13 */ u8 piece_count; // 2 for standard, 3–4 with garbage
+} Capsule; // size = 0x14 (updated from 0xC)
 
 typedef struct Point {
-    s8 x, y;
-} Point;
+    /* 0x0 */ s8 x, y;
+} Point; // size = 0x2
 
 typedef struct ValidPoint {
-    s8 x, y;
-    bool is_valid;
-} ValidPoint;
+    /* 0x0 */ s8 x, y;
+    /* 0x4 */ bool is_valid;
+} ValidPoint; // size = 0x8
 
 typedef struct struct_game_state_data_cap_attack_work {
     /* 0x0 */ u16 unk_0;
@@ -206,7 +206,7 @@ typedef struct struct_game_state_data {
     /* 0x004 */ u16 game_retry; /* Original name: game_retry */
     /* 0x006 */ s16 map_x; /* Original name: map_x */
     /* 0x008 */ s16 map_y; /* Original name: map_y */
-    /* 0x008 */ s8 map_item_size; /* Original name: map_item_size */
+    /* 0x00A */ s8 map_item_size; /* Original name: map_item_size */
     /* 0x00C */ EnumGameStateDataMode mode_now; /* Original name: mode_now */
     /* 0x010 */ EnumGameStateDataMode mode_old; /* Original name: mode_old */
     /* 0x014 */ EnumGameStateDataCnd cnd_now; /* Original name: cnd_now */
@@ -259,15 +259,15 @@ typedef struct struct_game_state_data {
     /* 0x170 */ s32 total_erase_count; /* Original name: total_erase_count */
     /* 0x174 */ s32 total_chain_count; /* Original name: total_chain_count */
     /* 0x178 */ Capsule now_cap; /* Original name: now_cap */
-    /* 0x184 */ Capsule next_cap; /* Original name: next_cap */
-    /* 0x190 */ struct_game_state_data_ai ai; /* Original name: ai */
-    /* 0x298 */ u8 pn; /* Original name: pn */
-    /* 0x299 */ u8 gs; /* Original name: gs */
-    /* 0x29A */ u8 lv; /* Original name: lv */
-    /* 0x29B */ u8 vs; /* Original name: vs */
-    /* 0x29C */ struct_game_state_data_blk blk[GAME_MAP_ROWS+1][GAME_MAP_COLUMNS]; /* Original name: blk */
-    /* 0x3BC */ struct_game_state_data_cap cap; /* Original name: cap */
-} struct_game_state_data; // size = 0x3C4
+    /* 0x18C */ Capsule next_cap; /* Original name: next_cap */
+    /* 0x1A0 */ struct_game_state_data_ai ai; /* Original name: ai */
+    /* 0x2A8 */ u8 pn; /* Original name: pn */
+    /* 0x2A9 */ u8 gs; /* Original name: gs */
+    /* 0x2AA */ u8 lv; /* Original name: lv */
+    /* 0x2AB */ u8 vs; /* Original name: vs */
+    /* 0x2AC */ struct_game_state_data_blk blk[GAME_MAP_ROWS+1][GAME_MAP_COLUMNS]; /* Original name: blk */
+    /* 0x3CC */ struct_game_state_data_cap cap; /* Original name: cap */
+} struct_game_state_data; // size = 0x3D4 (updated from 0x3C4)
 
 // Functions added for mod
 bool capsule_playable(Capsule *capsule);

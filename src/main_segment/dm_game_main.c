@@ -231,10 +231,10 @@ u8 CapsMagazine[0x100];
 typedef struct GameStateBackup {
     /* 0x0000 */ struct_watchGame game;                                          /* Original name: game */
     /* 0x0B60 */ struct_game_state_data state[MAX_PLAYERS];                      /* Original name: state */
-    /* 0x1A70 */ GameMapCell map[MAX_PLAYERS][GAME_MAP_ROWS * GAME_MAP_COLUMNS]; /* Original name: map */
-    /* 0x2FB0 */ s32 highScore;                                                  /* Original name: highScore */
-    /* 0x2FB4 */ s32 gameTime;                                                   /* Original name: gameTime */
-} GameStateBackup;                                                               // size = 0x2FB8
+    /* 0x1AB0 */ GameMapCell map[MAX_PLAYERS][GAME_MAP_ROWS * GAME_MAP_COLUMNS]; /* Original name: map */
+    /* 0x2FF0 */ s32 highScore;                                                  /* Original name: highScore */
+    /* 0x2FF4 */ s32 gameTime;                                                   /* Original name: gameTime */
+} GameStateBackup;                                                               // size = 0x2FF8 (updated from 0x2FB8)
 
 /**
  * Original name: gameBackup
@@ -1234,10 +1234,10 @@ void dm_init_capsel(Capsule *cap, u32 left_cap_col, u32 right_cap_col) {
     cap->sprite_index[1] = 3;
     cap->palette_index[0] = left_cap_col;
     cap->palette_index[1] = right_cap_col;
-    cap->piece_count = 2;
     cap->display_flag = 1;
-    cap->capsel_flg_2 = 0;
     cap->falling_flag = 0;
+    cap->capsel_flg_2 = 0;
+    cap->piece_count = 2;
 }
 
 /**
